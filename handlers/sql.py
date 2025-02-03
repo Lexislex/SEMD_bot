@@ -25,7 +25,7 @@ def add_log(message):
     conn = sqlite3.connect('env/data/user_data.sqlite')
     cursor = conn.cursor()
     cursor.execute('CREATE TABLE IF NOT EXISTS users_activity (\
-                   id INTEGER PRIMARY KEY,\
+                   id INTEGER,\
                    activity TEXT,\
                    date_time TEXT\
                    )')

@@ -23,7 +23,7 @@ def get_statistics(week=-3):
     df = df.pivot_table(index=['activity'], columns='week', values='user_id', aggfunc='count')
     df.index.name = None
     df = df.fillna(0)
-    message += f"Статистика по активности по неделям:\n\
+    message += f"Статистика активности по неделям:\n\
         <pre>{tabulate(df, headers='keys', tablefmt='psql')}</pre>"
 
     return message
