@@ -32,13 +32,12 @@ def start(message):
 
 @bot.message_handler(commands=['versions'])
 def versions(message):
- 
+    # Лог активности
+    sql.add_log(message) 
     mesg = bot.send_message(message.chat.id, "Введите ID редакции СЭМД:")
     bot.register_next_step_handler(mesg, get_versions)
 
 def get_versions(message):
-    # Лог активности
-    sql.add_log(message)
     try:
         semd = semd_1520(config['1520_ver']).get_semd_versions(message.text)
         bot.send_message(message.chat.id, f'<b>{semd[0]}</b>\n<pre>{semd[1]}</pre>', parse_mode='html',
