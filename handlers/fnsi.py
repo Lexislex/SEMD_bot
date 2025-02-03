@@ -26,7 +26,7 @@ class semd_1520():
         
         semd_versions = semd_versions.loc[:,['OID', 'START_DATE', 'END_DATE']].reset_index(drop=True)
         semd_versions = tabulate(semd_versions, showindex=False, \
-                                 tablefmt='psql', headers=['ID', 'Start', 'Stop'])
+                                 tablefmt='rounded_outline', headers=['ID', 'Start', 'Stop'])
         return name, semd_versions
     
     def get_newest(self, vers_num=1):
