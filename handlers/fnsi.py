@@ -21,8 +21,7 @@ class semd_1520():
         semd_versions = semd_versions.sort_values('OID')
         semd_versions['START_DATE'] = semd_versions['START_DATE'].dt.strftime('%d.%m.%y')
         semd_versions['END_DATE'] = semd_versions['END_DATE'].dt.strftime('%d.%m.%y')
-        
-        name = semd_versions['NAME'].iloc[-1].split('(')[0]
+        name = f"{semd_versions['NAME'].iloc[-1].split('(')[0]}\n(тип док.: {semd_type['TYPE'].iloc[0]})"
         
         semd_versions = semd_versions.loc[:,['OID', 'START_DATE', 'END_DATE']].reset_index(drop=True)
         semd_versions = tabulate(semd_versions, showindex=False, \
@@ -37,5 +36,5 @@ class semd_1520():
         newest_ver = newest_ver.groupby('TYPE').head(vers_num)
         return newest_ver
     
-# s = semd_1520('12.65').get_semd_versions(161)
-# print(f'{s[0]}\n{s[1]}')
+s = semd_1520('12.65').get_semd_versions(161)
+print(f'{s[0]}\n{s[1]}')
