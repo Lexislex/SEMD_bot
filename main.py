@@ -34,14 +34,15 @@ def start(message):
 def versions(message):
     # Лог активности
     sql.add_log(message) 
-    mesg = bot.send_message(message.chat.id, "Введите ID редакции СЭМД:")
+    mesg = bot.send_message(message.chat.id, f"Введите ID редакции СЭМД:")
     bot.register_next_step_handler(mesg, get_versions)
 
 def get_versions(message):
     try:
         semd = semd_1520(config['1520_ver']).get_semd_versions(message.text)
-        bot.send_message(message.chat.id, f'<b>{semd[0]}</b>\n<pre>{semd[1]}</pre>', parse_mode='html',
-                        disable_web_page_preview=True)
+        bot.send_message(message.chat.id, f'<b>{semd[0]}</b> {semd[3]}<pre>{semd[1]}</pre>Тип документа {semd[4]}\
+                         <pre>{semd[2]}</pre>', parse_mode='html', disable_web_page_preview=True)
+        versions(message)        
     except:
         bot.send_message(message.chat.id, f'ID не найден, попробуйте еще раз:\n/versions', parse_mode='html',
                         disable_web_page_preview=True)

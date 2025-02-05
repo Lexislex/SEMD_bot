@@ -21,12 +21,16 @@ class semd_1520():
         semd_versions = semd_versions.sort_values('OID')
         semd_versions['START_DATE'] = semd_versions['START_DATE'].dt.strftime('%d.%m.%y')
         semd_versions['END_DATE'] = semd_versions['END_DATE'].dt.strftime('%d.%m.%y')
-        name = f"{semd_versions['NAME'].iloc[-1].split('(')[0]}\n(тип док.: {semd_type['TYPE'].iloc[0]})"
-        
+        name = f"{semd_versions['NAME'].iloc[-1].split('(CDA)')[0]}"
+        doc_type = semd_type['TYPE'].iloc[0]
+        link_1520 = f"<a href='https://nsi.rosminzdrav.ru/dictionaries/\
+1.2.643.5.1.13.13.11.1520/passport/latest#filters=TYPE%7C{doc_type}%7CGTE&filters=TYPE%7C{doc_type}%7CLTE'>🔗</a>"
+        link_1522 = f"<a href='https://nsi.rosminzdrav.ru/dictionaries/\
+1.2.643.5.1.13.13.11.1522/passport/latest#filters=RECID%7C{doc_type}%7CGTE&filters=RECID%7C{doc_type}%7CLTE'>🔗</a>"
         semd_versions = semd_versions.loc[:,['OID', 'START_DATE', 'END_DATE']].reset_index(drop=True)
         semd_versions = tabulate(semd_versions, showindex=False, \
                                  tablefmt='rounded_outline', headers=['ID', 'Start', 'Stop'])
-        return name, semd_versions
+        return name, semd_versions, doc_type, link_1520, link_1522
     
     def get_newest(self, vers_num=1):
         # Формируем список самых свежих версий СЭМД
@@ -36,5 +40,7 @@ class semd_1520():
         newest_ver = newest_ver.groupby('TYPE').head(vers_num)
         return newest_ver
     
-s = semd_1520('12.65').get_semd_versions(161)
-print(f'{s[0]}\n{s[1]}')
+semd = semd_1520('12.65').get_semd_versions(194)
+# print(f'{s[0]}\n{s[1]}\n{s[2]}\n{s[3]}\n{s[4]}')
+print(f'<b>{semd[0]}</b> {semd[3]}<pre>{semd[1]}</pre>Тип документа {semd[4]}\
+                         <pre>{semd[2]}</pre>')
