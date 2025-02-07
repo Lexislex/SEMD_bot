@@ -29,7 +29,7 @@ class semd_1520():
 1.2.643.5.1.13.13.11.1522/passport/latest#filters=RECID%7C{doc_type}%7CGTE&filters=RECID%7C{doc_type}%7CLTE'>🔗</a>"
         semd_versions = semd_versions.loc[:,['OID', 'START_DATE', 'END_DATE']].reset_index(drop=True)
         semd_versions = tabulate(semd_versions, showindex=False, \
-                                 tablefmt='rounded_outline', headers=['ID', 'Start', 'Stop'])
+                                 tablefmt='simple', headers=['ID', 'Start', 'Stop'])
         return name, semd_versions, doc_type, link_1520, link_1522
     
     def get_newest(self, vers_num=1):
