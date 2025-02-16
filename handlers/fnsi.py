@@ -1,12 +1,23 @@
+from sys import exception
 import pandas as pd
 import locale
+import sqlite3
 locale.setlocale(locale.LC_TIME, 'ru_RU')
 from datetime import datetime
 from tabulate import tabulate
+# from sql import create_table_nsi_passport
+from handlers.file_utils import download_file
+
+# подключаем модули для dotenv
+from dotenv import dotenv_values
+config = dotenv_values('.env')
 
 class semd_1520():
-    def __init__(self, version):
-        self.df = pd.read_csv(f'files/1.2.643.5.1.13.13.11.1520_{version}_csv.zip', 
+    def __init__(self):
+        self.id = '1.2.643.5.1.13.13.11.1520'
+        self.ver = fnsi_version(self.id)
+        download_file(self.id, self.ver.latest)
+        self.df = pd.read_csv(f'{config['FILES_PATH']}{self.id}_{self.ver.latest}_csv.zip', 
                   sep=';', parse_dates=['START_DATE', 'END_DATE'], dayfirst=True)
         self.df = self.df.loc[:,['OID', 'TYPE', 'NAME',\
                                  'START_DATE', 'END_DATE', 'FORMAT']]
@@ -40,7 +51,68 @@ class semd_1520():
         newest_ver = newest_ver.groupby('TYPE').head(vers_num)
         return newest_ver
     
-semd = semd_1520('12.65').get_semd_versions(194)
-# print(f'{s[0]}\n{s[1]}\n{s[2]}\n{s[3]}\n{s[4]}')
-print(f'<b>{semd[0]}</b> {semd[3]}<pre>{semd[1]}</pre>Тип документа {semd[4]}\
-                         <pre>{semd[2]}</pre>')
+class fnsi_version():
+    def __init__(self, fnsi) -> None:
+        self.fnsi = fnsi
+        self.latest = self.get_ver()
+        self.rel_notes = self.get_relnotes()
+
+    def get_ver(self):
+        con = sqlite3.connect(str(config['FNSI_DB']))
+        cur = con.cursor()
+        # cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nsi_passport'")
+        # table_exist = cur.fetchone()
+        # if not table_exist: create_table_nsi_passport()
+        try:
+            cur.execute(
+                "SELECT \
+                    version \
+                FROM nsi_passport \
+                WHERE ID = ? \
+                ORDER by lastUpdate DESC limit 1",
+                [self.fnsi]
+            )
+        except Exception as e:
+            print('Warning:', e)
+            con.close()
+        try:
+            ver = cur.fetchone()[0]
+        except Exception as e:
+            print('Warning:', e)
+            con.close()
+            ver = 'empty version'
+        con.close()
+        return ver
+    
+    def get_relnotes(self):
+        con = sqlite3.connect(str(config['FNSI_DB']))
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nsi_passport'")
+        except Exception as e:
+                print('Warning:', e)
+                # Закрываем подключение к базе
+                con.close()
+        try:
+            cur.execute(
+                "SELECT \
+                    releaseNotes \
+                FROM nsi_passport \
+                WHERE ID = ? AND version = ?\
+                ORDER by lastUpdate DESC limit 1",
+                [self.fnsi, self.latest]
+            )
+        except Exception as e:
+            print('Warning:', e)
+        try:
+            rel_notes = cur.fetchone()[0]
+        except Exception as e:
+            print('Warning:', e)
+            con.close()
+            rel_notes = 'empty notes'
+        con.close()
+        return rel_notes
+    
+if __name__ == '__main__':
+    print('This module is not for direct call')
+    exit(1)
