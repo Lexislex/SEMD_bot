@@ -1,4 +1,3 @@
-from sys import exception
 import pandas as pd
 import locale
 import sqlite3
@@ -17,7 +16,7 @@ class semd_1520():
         self.id = '1.2.643.5.1.13.13.11.1520'
         self.ver = fnsi_version(self.id)
         download_file(self.id, self.ver.latest)
-        self.df = pd.read_csv(f'{config['FILES_PATH']}{self.id}_{self.ver.latest}_csv.zip', 
+        self.df = pd.read_csv(f"{config['FILES_PATH']}{self.id}_{self.ver.latest}_csv.zip", 
                   sep=';', parse_dates=['START_DATE', 'END_DATE'], dayfirst=True)
         self.df = self.df.loc[:,['OID', 'TYPE', 'NAME',\
                                  'START_DATE', 'END_DATE', 'FORMAT']]
