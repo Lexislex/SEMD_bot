@@ -1,7 +1,7 @@
 import pandas as pd
 import locale
 import sqlite3
-locale.setlocale(locale.LC_TIME, 'ru_RU')
+locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 from datetime import datetime
 from tabulate import tabulate
 # from sql import create_table_nsi_passport
