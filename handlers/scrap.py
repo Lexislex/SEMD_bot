@@ -1,6 +1,5 @@
 import requests
-import json
-from bs4 import BeautifulSoup
+import dateutil.parser as parser
 from handlers.fnsi import fnsi_version
 from handlers.sql import add_nsi_passport
 # подключаем модули для dotenv
@@ -19,14 +18,10 @@ def get_version(nsi: str, ver: str='latest') -> dict:
     """
 
     s = requests.Session()
-    s.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0'
-        })
-    url = 'https://nsi.rosminzdrav.ru/dictionaries/%s/passport/%s' % (nsi, ver)
+    url = f'https://nsi.rosminzdrav.ru/port/rest/passport?userKey={config["FNSI_API_KEY"]}&identifier={nsi}'
     r = s.get(url, verify=config['MZRF_CERT'])
-    soup = BeautifulSoup(r.text, 'lxml')
-    web_data = soup.find('body').find('script').contents[0]
-    data = json.loads(web_data)['props']['pageProps']['dict']
+    data = r.json()
+    data['lastUpdate'] = parser.parse(data['lastUpdate']).isoformat()
     fnsi_info = {'id' : data['oid'], 'fullName' : data['fullName'], 'shortName' : data['shortName'], 
                     'lastUpdate' : data['lastUpdate'], 'version' : data['version'], 
                     'releaseNotes' : data['releaseNotes']}

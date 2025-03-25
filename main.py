@@ -89,7 +89,7 @@ def start_schedule():
 
 # Запускаем бота
 if __name__ == '__main__':
-    #Thread(target=start_schedule, args=()).start()
+    Thread(target=start_schedule, args=()).start()
     while True:
         # в бесконечном цикле постоянно опрашиваем бота — есть ли новые сообщения
         try:
