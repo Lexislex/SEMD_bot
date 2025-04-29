@@ -17,8 +17,11 @@ def add_user(id, usename, first_name, last_name):
                    reg_date TEXT\
                    )')
     try:
-        cursor.execute('INSERT INTO users (id, username, first_name, last_name, reg_date) VALUES (?, ?, ?, ?, ?)', \
-                       (id, usename, first_name, last_name, datetime.now().isoformat()))
+        cursor.execute(
+            'INSERT INTO users'\
+            '(id, username, first_name, last_name, reg_date)'\
+            ' VALUES (?, ?, ?, ?, ?)',\
+            (id, usename, first_name, last_name, datetime.now().isoformat()))
         conn.commit()
     except Exception as e:
         print('Warning:', e)
@@ -28,12 +31,10 @@ def add_user(id, usename, first_name, last_name):
 def add_log(message):
     conn = sqlite3.connect(str(config['USER_DB']))
     cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS users_activity (\
-                   id INTEGER,\
-                   activity TEXT,\
-                   date_time TEXT\
-                   )')
-    cursor.execute('SELECT id FROM users WHERE id = ?', (message.from_user.id,))
+    cursor.execute('CREATE TABLE IF NOT EXISTS users_activity'\
+                   ' (id INTEGER, activity TEXT, date_time TEXT)')
+    cursor.execute('SELECT id FROM users WHERE id = ?',\
+                   (message.from_user.id,))
     if cursor.fetchone() is None:
         add_user(message.from_user.id, message.from_user.username, \
                  message.from_user.first_name, message.from_user.last_name)
@@ -44,8 +45,10 @@ def add_log(message):
             log_text = message.text
         else:
             log_text = 'unknown type'
-        cursor.execute('INSERT INTO users_activity (id, activity, date_time) VALUES (?, ?, ?)', \
-                       (message.from_user.id, log_text, datetime.now().isoformat()))
+        cursor.execute('INSERT INTO users_activity'\
+                       '(id, activity, date_time) VALUES (?, ?, ?)',\
+                       (message.from_user.id, log_text,\
+                        datetime.now().isoformat()))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -57,7 +60,8 @@ def get_activity(start_date = '', stop_date = ''):
     conn = sqlite3.connect(str(config['USER_DB']))
     cursor = conn.cursor()
     try:
-        cursor.execute('SELECT * FROM users_activity WHERE date_time between ? and ?', \
+        cursor.execute('SELECT * FROM users_activit'\
+                       'WHERE date_time between ? and ?', \
                        (start_date, stop_date))
         res = cursor.fetchall()
         conn.close()
@@ -72,8 +76,9 @@ def create_table_nsi_passport():
     con = sqlite3.connect(config['FNSI_DB'])
     cur = con.cursor()
     try:
-        cur.execute("CREATE TABLE nsi_passport (ID, Name, ShortName, lastUpdate, \
-                version, releaseNotes, add_date);")
+        cur.execute("CREATE TABLE nsi_passport"\
+                    "(ID, Name, ShortName, lastUpdate, version, "\
+                    "releaseNotes, add_date);")
         con.commit()
         # Закрываем подключение к базе
         con.close()
@@ -99,7 +104,8 @@ def add_nsi_passport(to_db: list) -> bool:
     con = sqlite3.connect(config['FNSI_DB'])
     cur = con.cursor()
     # Проверяем наличие таблицы в базе и если нет, то создаем.
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nsi_passport'")
+    cur.execute("SELECT name FROM sqlite_master "\
+                "WHERE type='table' AND name='nsi_passport'")
     table_exists = cur.fetchone()
     if not table_exists: create_table_nsi_passport()
     # Проверяем наличие информации в базе. 
@@ -113,7 +119,8 @@ def add_nsi_passport(to_db: list) -> bool:
             now = datetime.now().isoformat()
             # Добавляем текущую дату и время к добавляемой информации
             to_db['add_date'] = now
-            cur.execute("INSERT INTO nsi_passport (ID, Name, ShortName, lastUpdate, \
+            cur.execute("INSERT INTO nsi_passport"\
+                        "(ID, Name, ShortName, lastUpdate, \
                         version, releaseNotes, add_date) \
                         VALUES (?, ?, ?, ?, ?, ?, ?);",
                         list(to_db.values()))

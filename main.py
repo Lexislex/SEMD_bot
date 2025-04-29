@@ -15,15 +15,21 @@ from threading import Thread
 
 # подключаем модуль для Телеграма
 import telebot
-#from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 bot = telebot.TeleBot(str(config['BOT_TOKEN']))
 
 # приветственный текст
 start_txt = 'Привет!\nЭто бот - информатор о версиях СЭМД.\n\
 Достаточно ввести ID одной из редаций СЭМД и я покажу все редакции \
-этого СЭМД и сроки начала и окончания его регистрации в РЭМД\n\
-\nИспользуйте команду /versions'
+этого СЭМД и сроки начала и окончания его регистрации в РЭМД'
+
+markup_inline = InlineKeyboardMarkup(row_width=1)
+markup_inline.add(InlineKeyboardButton(text='искать версии СЭМД', callback_data='versions'))
+
+markup_back = InlineKeyboardMarkup(row_width=1)
+markup_back.add(InlineKeyboardButton(text='<- назад', callback_data='back'))
+# markup_inline.add(item)
 
 # обрабатываем старт бота
 @bot.message_handler(commands=['start', 'about'])
@@ -33,27 +39,34 @@ def start(message):
                  message.from_user.first_name, message.from_user.last_name)
     # Лог активности
     add_log(message)
+
     # Отправляем приветственное сообщение
-    bot.send_message(message.from_user.id, start_txt, parse_mode='Markdown')
+    bot.send_message(message.from_user.id, start_txt, parse_mode='Markdown', reply_markup=markup_inline)
 
-@bot.message_handler(commands=['versions'])
-def versions(message):
-    # Лог активности
-    add_log(message) 
-    mesg = bot.send_message(message.chat.id, f"Введите ID редакции СЭМД:")
-    bot.register_next_step_handler(mesg, get_versions)
-
-def get_versions(message):
-    try:
-        semd = semd_1520().get_semd_versions(message.text)
-        bot.send_message(message.chat.id,\
-                         f'<b>{semd[0]}</b> {semd[3]}<pre>{semd[1]}</pre>Тип документа:  {semd[2]}  {semd[4]}',\
-                        parse_mode='html', disable_web_page_preview=True)
-        versions(message)        
-    except:
-        bot.send_message(message.chat.id, f'ID не найден, попробуйте еще раз:\n/versions', parse_mode='html',
-                        disable_web_page_preview=True)
+#Вот здесь нужно делать ответ на кнопки
+@bot.callback_query_handler(func=lambda call: True)
+def answer(call):
+    if call.data == 'versions':
+        def get_versions(message):
+            try:
+                semd = semd_1520().get_semd_versions(message.text)
+                bot.send_message(message.chat.id,\
+                                f'<b>{semd[0]}</b> {semd[3]}<pre>{semd[1]}</pre>Тип документа:  {semd[2]}  {semd[4]}',\
+                                parse_mode='html', disable_web_page_preview=True)
+                answer(call)        
+            except:
+                bot.send_message(message.chat.id, f'ID не найден, попробуйте еще раз', parse_mode='html',
+                                disable_web_page_preview=True)
+                answer(call)
         
+        # Лог активности
+        add_log(call.message) 
+        mesg = bot.send_message(call.message.chat.id, f"Введите ID редакции СЭМД:", reply_markup=markup_back)
+        bot.register_next_step_handler(mesg, get_versions)
+
+    elif call.data == 'back':
+        bot.send_message(call.message.chat.id, start_txt, parse_mode='Markdown', reply_markup=markup_inline)
+
 @bot.message_handler(commands=['stat'])
 def stat(message):
     # Лог активности
@@ -64,8 +77,8 @@ def stat(message):
         
 @bot.message_handler(content_types=['text'])
 def auto_answer(message):
-    bot.send_message(message.from_user.id, 'Используйте команду /versions', parse_mode='Markdown')
-
+    start(message)
+    
 def check_updates():
     # send_list = [config['ADMIN_ID']]
     check_list = ['1.2.643.5.1.13.13.11.1520']
