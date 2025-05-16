@@ -46,7 +46,11 @@ def start(message):
 #Вот здесь нужно делать ответ на кнопки
 @bot.callback_query_handler(func=lambda call: True)
 def answer(call):
+    # Лог активности
+    add_log(call.message)
     if call.data == 'versions':
+        bot.answer_callback_query(call.id, text="")
+
         def get_versions(message):
             try:
                 semd = semd_1520().get_semd_versions(message.text)
@@ -54,17 +58,18 @@ def answer(call):
                                 f'<b>{semd[0]}</b> {semd[3]}<pre>{semd[1]}</pre>Тип документа:  {semd[2]}  {semd[4]}',\
                                 parse_mode='html', disable_web_page_preview=True)
                 answer(call)        
+
             except:
                 bot.send_message(message.chat.id, f'ID не найден, попробуйте еще раз', parse_mode='html',
                                 disable_web_page_preview=True)
                 answer(call)
         
-        # Лог активности
-        add_log(call.message) 
         mesg = bot.send_message(call.message.chat.id, f"Введите ID редакции СЭМД:", reply_markup=markup_back)
         bot.register_next_step_handler(mesg, get_versions)
 
     elif call.data == 'back':
+        bot.answer_callback_query(call.id, text="")
+
         bot.send_message(call.message.chat.id, start_txt, parse_mode='Markdown', reply_markup=markup_inline)
 
 @bot.message_handler(commands=['stat'])
