@@ -60,8 +60,7 @@ def get_activity(start_date = '', stop_date = ''):
     conn = sqlite3.connect(str(config['USER_DB']))
     cursor = conn.cursor()
     try:
-        cursor.execute('SELECT * FROM users_activit'\
-                       'WHERE date_time between ? and ?', \
+        cursor.execute('SELECT * FROM users_activity WHERE date_time BETWEEN ? AND ?',
                        (start_date, stop_date))
         res = cursor.fetchall()
         conn.close()

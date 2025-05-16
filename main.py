@@ -60,7 +60,7 @@ def get_versions(message):
 @bot.callback_query_handler(func=lambda call: True)
 def answer(call):
     # Лог активности
-    add_log(call.message)
+    add_log(call)
 
     bot.answer_callback_query(call.id, text="")
     # bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.id, reply_markup='')
