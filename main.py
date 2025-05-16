@@ -43,40 +43,40 @@ def start(message):
     # Отправляем приветственное сообщение
     bot.send_message(message.from_user.id, start_txt, parse_mode='Markdown', reply_markup=markup_inline)
 
-#Вот здесь нужно делать ответ на кнопки
+def get_versions(message):
+    try:
+        semd = semd_1520().get_semd_versions(message.text)
+        bot.send_message(message.chat.id,\
+                        f'<b>{semd[0]}</b> {semd[3]}<pre>{semd[1]}</pre>Тип документа:  {semd[2]}  {semd[4]}',\
+                        parse_mode='html', disable_web_page_preview=True)
+    except:
+        bot.send_message(message.chat.id, f'ID не найден, попробуйте еще раз', parse_mode='html',
+                        disable_web_page_preview=True)
+
+    mesg = bot.send_message(message.chat.id, f"Введите ID редакции СЭМД:", reply_markup=markup_back)
+    bot.register_next_step_handler(mesg, get_versions)
+
+#Ответ на кнопки
 @bot.callback_query_handler(func=lambda call: True)
 def answer(call):
     # Лог активности
     add_log(call.message)
-    if call.data == 'versions':
-        bot.answer_callback_query(call.id, text="")
 
-        def get_versions(message):
-            try:
-                semd = semd_1520().get_semd_versions(message.text)
-                bot.send_message(message.chat.id,\
-                                f'<b>{semd[0]}</b> {semd[3]}<pre>{semd[1]}</pre>Тип документа:  {semd[2]}  {semd[4]}',\
-                                parse_mode='html', disable_web_page_preview=True)
-                answer(call)        
+    bot.answer_callback_query(call.id, text="")
+    # bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.id, reply_markup='')
 
-            except:
-                bot.send_message(message.chat.id, f'ID не найден, попробуйте еще раз', parse_mode='html',
-                                disable_web_page_preview=True)
-                answer(call)
-        
-        mesg = bot.send_message(call.message.chat.id, f"Введите ID редакции СЭМД:", reply_markup=markup_back)
-        bot.register_next_step_handler(mesg, get_versions)
+    if call.data == 'versions':        
+        get_versions(call.message)
 
     elif call.data == 'back':
-        bot.answer_callback_query(call.id, text="")
-
+        bot.clear_step_handler_by_chat_id(chat_id=call.message.chat.id)
         bot.send_message(call.message.chat.id, start_txt, parse_mode='Markdown', reply_markup=markup_inline)
 
 @bot.message_handler(commands=['stat'])
 def stat(message):
     # Лог активности
     add_log(message)
-    # Отправляем список семинаров
+    
     bot.send_message(message.from_user.id, get_statistics(), parse_mode='html',
                      disable_web_page_preview=True)
         
@@ -103,7 +103,6 @@ def start_schedule():
     while True:
         schedule.run_pending()
         time.sleep(1)
-
 
 # Запускаем бота
 if __name__ == '__main__':
