@@ -53,8 +53,10 @@ def get_versions(message):
         bot.send_message(message.chat.id, f'ID не найден, попробуйте еще раз', parse_mode='html',
                         disable_web_page_preview=True)
 
-    mesg = bot.send_message(message.chat.id, f"Введите ID редакции СЭМД:", reply_markup=markup_back)
-    bot.register_next_step_handler(mesg, get_versions)
+    bot.register_next_step_handler(
+        bot.send_message(message.chat.id, f"Введите ID редакции СЭМД:", reply_markup=markup_back),
+        get_versions
+        )
 
 #Ответ на кнопки
 @bot.callback_query_handler(func=lambda call: True)
@@ -63,10 +65,12 @@ def answer(call):
     add_log(call)
 
     bot.answer_callback_query(call.id, text="")
-    # bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.id, reply_markup='')
 
-    if call.data == 'versions':        
-        get_versions(call.message)
+    if call.data == 'versions':
+        bot.register_next_step_handler(
+            bot.send_message(call.message.chat.id, f"Введите ID редакции СЭМД:", reply_markup=markup_back),
+            get_versions
+            )
 
     elif call.data == 'back':
         bot.clear_step_handler_by_chat_id(chat_id=call.message.chat.id)
