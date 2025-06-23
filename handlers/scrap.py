@@ -20,7 +20,7 @@ def get_version(nsi: str, ver: str='latest') -> dict:
 
     s = requests.Session()
     url = f'https://nsi.rosminzdrav.ru/port/rest/passport'\
-        '?userKey={config["FNSI_API_KEY"]}&identifier={nsi}'
+        f'?userKey={config["FNSI_API_KEY"]}&identifier={nsi}'
     r = s.get(url, verify=config['MZRF_CERT'])
     data = r.json()
     data['lastUpdate'] = parser.parse(data['lastUpdate']).isoformat()
