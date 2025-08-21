@@ -87,7 +87,7 @@ def nsi_passport_updater(fnsi_oid: str, vers='latest'):
        if add_nsi_passport(fnsi_info):
         dt = parser.parse(fnsi_info['lastUpdate'])
         message = f"🆕 <b>Обновление версии</b>\n"\
-            f"{dt.strftime("%H:%M %d.%m.%Y")}\n"\
+            f"{dt.strftime('%H:%M %d.%m.%Y')}\n"\
             f"Справочник: "\
             f"{fnsi_info['shortName']}\n"\
             f"<a href='https://nsi.rosminzdrav.ru/dictionaries/"\

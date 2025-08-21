@@ -102,7 +102,7 @@ def check_updates():
                 print(f"Не удалось отправить сообщение пользователю {chat_id}: {e}")
         
 def start_schedule():
-    schedule.every(2).minutes.do(check_updates,)
+    schedule.every(15).minutes.do(check_updates,)
 
     while True:
         schedule.run_pending()
