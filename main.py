@@ -7,6 +7,7 @@ from handlers.fnsi import semd_1520
 from handlers.sql import add_log, add_user
 from handlers.stat import get_statistics
 from handlers.scrap import nsi_passport_updater
+from handlers.data import NSI_LIST
 
 # Импортируем библитеки расписания
 import schedule
@@ -90,8 +91,7 @@ def auto_answer(message):
     
 def check_updates():
     # send_list = [config['ADMIN_ID']]
-    check_list = ['1.2.643.5.1.13.13.11.1520']
-    for el in check_list:
+    for el in NSI_LIST:
         res, upd_msg = nsi_passport_updater(el)
         if res:
             try:
@@ -102,7 +102,7 @@ def check_updates():
                 print(f"Не удалось отправить сообщение пользователю {chat_id}: {e}")
         
 def start_schedule():
-    schedule.every(15).minutes.do(check_updates,)
+    schedule.every(2).minutes.do(check_updates,)
 
     while True:
         schedule.run_pending()
