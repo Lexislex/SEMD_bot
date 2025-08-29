@@ -23,10 +23,10 @@ def get_version(nsi: str, ver: str='latest') -> dict:
         f'?userKey={config["FNSI_API_KEY"]}&identifier={nsi}'
     r = s.get(url, verify=config['MZRF_CERT'])
     data = r.json()
-    data['lastUpdate'] = parser.parse(data['lastUpdate']).isoformat()
+    # data['lastUpdate'] = parser.parse(data['lastUpdate']).isoformat()
     fnsi_info = {'id' : data['oid'], 'fullName' : data['fullName'],
                  'shortName' : data['shortName'],
-                 'lastUpdate' : data['lastUpdate'],
+                 # 'lastUpdate' : data['lastUpdate'],
                  'version' : data['version'],
                  'releaseNotes' : data['releaseNotes']}
     return fnsi_info
@@ -85,11 +85,9 @@ def nsi_passport_updater(fnsi_oid: str, vers='latest'):
     fnsi_info = get_version(fnsi_oid, vers)
     if not fnsi.latest == fnsi_info['version']:
        if add_nsi_passport(fnsi_info):
-        dt = parser.parse(fnsi_info['lastUpdate'])
+        # dt = parser.parse(fnsi_info['lastUpdate'])
         message = f"🆕 <b>Обновление версии</b>\n"\
-            f"{dt.strftime('%H:%M %d.%m.%Y')}\n"\
-            f"Справочник: "\
-            f"{fnsi_info['shortName']}\n"\
+                f"Справочник: {fnsi_info['shortName']}\n"\
             f"<a href='https://nsi.rosminzdrav.ru/dictionaries/"\
             f"{fnsi_info['id']}/passport/{fnsi_info['version']}'>{fnsi_info['id']}</a>\n"\
             f"версия: {fnsi_info['version']}\n\n"\
