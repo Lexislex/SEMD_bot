@@ -77,7 +77,7 @@ class fnsi_version():
         try:
             ver = cur.fetchone()[0]
         except Exception as e:
-            print('Warning:', e)
+            # print('Warning:', e)
             con.close()
             ver = 'empty version'
         con.close()
@@ -106,7 +106,7 @@ class fnsi_version():
         try:
             rel_notes = cur.fetchone()[0]
         except Exception as e:
-            print('Warning:', e)
+            # print('Warning:', e)
             con.close()
             rel_notes = 'empty notes'
         con.close()

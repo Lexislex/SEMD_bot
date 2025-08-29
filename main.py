@@ -90,7 +90,6 @@ def auto_answer(message):
     start(message)
     
 def check_updates():
-    # send_list = [config['ADMIN_ID']]
     for el in NSI_LIST:
         res, upd_msg = nsi_passport_updater(el)
         if res:
