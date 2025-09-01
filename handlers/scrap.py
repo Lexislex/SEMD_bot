@@ -1,5 +1,6 @@
 import requests
 import dateutil.parser as parser
+from datetime import datetime
 from typing import Optional, Tuple, Dict, Any
 from handlers.fnsi import fnsi_version
 from handlers.sql import add_nsi_passport
@@ -102,11 +103,12 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
             logger.error(error_msg)
             raise ValueError(error_msg)
     
+    update = datetime.strptime(data['publishDate'], "%d.%m.%Y %H:%M")
     fnsi_info = {
         'id': data['oid'],
         'fullName': data['fullName'],
         'shortName': data['shortName'],
-        'lastUpdate': parser.parse(data['publishDate']).isoformat(),
+        'lastUpdate': update.isoformat(),
         'version': data['version'],
         'releaseNotes': data['releaseNotes'],
     }
