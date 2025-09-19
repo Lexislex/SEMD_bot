@@ -130,6 +130,18 @@ ENV/
 env.bak/
 venv.bak/
 
+# VSCode
+.vscode/
+
+# Cursor
+.cursor/
+
+# Test folders
+/tests/
+
+# Files folder
+files/
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -153,9 +165,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-
-#VSCode
-.vscode
 
 *.zip
 
