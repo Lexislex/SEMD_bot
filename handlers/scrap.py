@@ -33,13 +33,17 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
     if not config.get('MZRF_CERT'):
         raise ValueError("Отсутствует MZRF_CERT в конфигурации")
 
+    headers = {
+        'Accept': 'application/json;charset=UTF-8',
+        'Content-Type': 'application/json'
+    }
     session = requests.Session()
-    url = f'https://nsi.rosminzdrav.ru/port/rest/passport'\
+    url = f'https://nsi.rosminzdrav.ru/port/rest/searchDictionary'\
           f'?userKey={config["FNSI_API_KEY"]}&identifier={nsi}'
     
     try:
         response = session.get(
-            url, 
+            url, headers=headers,
             verify=config['MZRF_CERT'],
             timeout=30  # Таймаут 30 секунд
         )
@@ -67,7 +71,7 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
         raise ValueError(error_msg)
     
     try:
-        data = response.json()
+        data = response.json()['list'][0]
     except ValueError as e:
         error_msg = f"Невалидный JSON ответ от ФНСИ для {nsi}: {str(e)}"
         logger.error(error_msg)
