@@ -2,10 +2,10 @@ import os
 import glob
 import requests
 # подключаем модули для dotenv
-from dotenv import dotenv_values
-config = dotenv_values('.env')
+from config import get_config
+cfg = get_config()
 
-def download_file(nsi:str, ver: str, path: str=config['FILES_PATH']) -> bool:
+def download_file(nsi:str, ver: str, path: str=cfg.paths.files_dir) -> bool:
     """ Эта функция удаляет все версии справочника в папке и скачивает
     необходимый архив со справочником в заданную папку.
 
@@ -31,8 +31,8 @@ def download_file(nsi:str, ver: str, path: str=config['FILES_PATH']) -> bool:
         # Скачиваем файл
         with open(os.path.join(path, out_file_name), 'wb') as out_stream:
             req = requests.get(
-                f'https://nsi.rosminzdrav.ru/api/dataFiles/{out_file_name}',
-                stream=True, verify=config['MZRF_CERT'])
+                f'{cfg.apis.fnsi_file_url}/{out_file_name}',
+                stream=True, verify=cfg.paths.mzrf_cert_path)
             if req.status_code != 200:
                 raise FileNotFoundError(req.json()['resultText'])
             # Скачиваем файл в папку

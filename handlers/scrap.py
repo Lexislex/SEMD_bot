@@ -4,14 +4,13 @@ from datetime import datetime
 from typing import Optional, Tuple, Dict, Any
 from handlers.fnsi import fnsi_version
 from handlers.sql import add_nsi_passport
-from dotenv import dotenv_values
 import logging
-
+from config import get_config
 # Настройка логирования
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
-config = dotenv_values('.env')
+cfg = get_config()
 
 def get_version(nsi: str, ver: str = 'latest') -> dict:
     """
@@ -27,10 +26,10 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
     Raises:
         Exception: ошибки запроса или обработки ответа
     """
-    if not config.get("FNSI_API_KEY"):
+    if not cfg.apis.fnsi_api_key:
         raise ValueError("Отсутствует FNSI_API_KEY в конфигурации")
     
-    if not config.get('MZRF_CERT'):
+    if not cfg.paths.mzrf_cert_path:
         raise ValueError("Отсутствует MZRF_CERT в конфигурации")
 
     headers = {
@@ -38,13 +37,13 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
         'Content-Type': 'application/json'
     }
     session = requests.Session()
-    url = f'https://nsi.rosminzdrav.ru/port/rest/searchDictionary'\
-          f'?userKey={config["FNSI_API_KEY"]}&identifier={nsi}'
+    url = f'{cfg.apis.fnsi_api_url}/searchDictionary'\
+          f'?userKey={cfg.apis.fnsi_api_key}&identifier={nsi}'
     
     try:
         response = session.get(
             url, headers=headers,
-            verify=config['MZRF_CERT'],
+            verify=cfg.paths.mzrf_cert_path,
             timeout=30  # Таймаут 30 секунд
         )
         response.raise_for_status()  # Проверка HTTP статуса

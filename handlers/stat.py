@@ -3,8 +3,8 @@ import handlers.sql as sql
 import pandas as pd
 from tabulate import tabulate
 # подключаем модули для dotenv
-from dotenv import dotenv_values
-config = dotenv_values('.env')
+from config import get_config
+cfg = get_config()
 
 def next_weekday(d, weekday, week):
     days_ahead = weekday - d.weekday()
@@ -18,7 +18,7 @@ def get_statistics(week=-3):
     df = pd.DataFrame(sql.get_activity(start_date, stop_date),
                       columns=['user_id', 'activity', 'date_time'])
     df['date_time'] = pd.to_datetime(df['date_time'])
-    df = df[df['user_id'] != int(config['ADMIN_ID'])]
+    df = df[df['user_id'] != cfg.accounts.admin_id]
     df['week'] = df['date_time'].dt.isocalendar().week
     df = df.pivot_table(index=['activity'], columns='week', values='user_id', aggfunc='count')
     df.index.name = None

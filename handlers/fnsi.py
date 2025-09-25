@@ -8,15 +8,15 @@ from tabulate import tabulate
 from handlers.file_utils import download_file
 
 # подключаем модули для dotenv
-from dotenv import dotenv_values
-config = dotenv_values('.env')
+from config import get_config
+cfg = get_config()
 
 class semd_1520():
     def __init__(self):
         self.id = '1.2.643.5.1.13.13.11.1520'
         self.ver = fnsi_version(self.id)
         download_file(self.id, self.ver.latest)
-        self.df = pd.read_csv(f"{config['FILES_PATH']}{self.id}_{self.ver.latest}_csv.zip", 
+        self.df = pd.read_csv(f"{cfg.paths.files_dir}/{self.id}_{self.ver.latest}_csv.zip", 
                   sep=';', parse_dates=['START_DATE', 'END_DATE'], dayfirst=True)
         self.df = self.df.loc[:,['OID', 'TYPE', 'NAME',\
                                  'START_DATE', 'END_DATE', 'FORMAT']]
@@ -57,7 +57,7 @@ class fnsi_version():
         self.rel_notes = self.get_relnotes()
 
     def get_ver(self):
-        con = sqlite3.connect(str(config['FNSI_DB']))
+        con = sqlite3.connect(cfg.paths.fnsi_db_path)
         cur = con.cursor()
         # cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nsi_passport'")
         # table_exist = cur.fetchone()
@@ -84,7 +84,7 @@ class fnsi_version():
         return ver
     
     def get_relnotes(self):
-        con = sqlite3.connect(str(config['FNSI_DB']))
+        con = sqlite3.connect(cfg.paths.fnsi_db_path)
         cur = con.cursor()
         try:
             cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nsi_passport'")

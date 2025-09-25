@@ -3,11 +3,11 @@ from datetime import datetime
 from telebot import types
 
 # подключаем модули для dotenv
-from dotenv import dotenv_values
-config = dotenv_values('.env')
+from config import get_config
+cfg = get_config()
 
 def add_user(id, usename, first_name, last_name):
-    conn = sqlite3.connect(str(config['USER_DB']))
+    conn = sqlite3.connect(cfg.paths.user_db_path)
     cursor = conn.cursor()
     cursor.execute('CREATE TABLE IF NOT EXISTS users (\
                    id INTEGER PRIMARY KEY,\
@@ -29,7 +29,7 @@ def add_user(id, usename, first_name, last_name):
         conn.close()
 
 def add_log(message):
-    conn = sqlite3.connect(str(config['USER_DB']))
+    conn = sqlite3.connect(cfg.paths.user_db_path)
     cursor = conn.cursor()
     cursor.execute('CREATE TABLE IF NOT EXISTS users_activity'\
                    ' (id INTEGER, activity TEXT, date_time TEXT)')
@@ -57,7 +57,7 @@ def add_log(message):
         conn.close()
 
 def get_activity(start_date = '', stop_date = ''):
-    conn = sqlite3.connect(str(config['USER_DB']))
+    conn = sqlite3.connect(cfg.paths.user_db_path)
     cursor = conn.cursor()
     try:
         cursor.execute('SELECT * FROM users_activity WHERE date_time BETWEEN ? AND ?',
@@ -72,7 +72,7 @@ def get_activity(start_date = '', stop_date = ''):
     
 def create_table_nsi_passport():
        # Подключение к базе данных
-    con = sqlite3.connect(config['FNSI_DB'])
+    con = sqlite3.connect(cfg.paths.fnsi_db_path)
     cur = con.cursor()
     try:
         cur.execute("CREATE TABLE nsi_passport"\
@@ -100,7 +100,7 @@ def add_nsi_passport(to_db: list) -> bool:
     """
     res = False
     # Подключение к базе данных
-    con = sqlite3.connect(config['FNSI_DB'])
+    con = sqlite3.connect(cfg.paths.fnsi_db_path)
     cur = con.cursor()
     # Проверяем наличие таблицы в базе и если нет, то создаем.
     cur.execute("SELECT name FROM sqlite_master "\

@@ -14,7 +14,7 @@ dependencies = [
     "pytelegrambotapi (>=4.29.1,<5.0.0)",
     "schedule (>=1.2.2,<2.0.0)",
     "tabulate (>=0.9.0,<0.10.0)",
-    "pandas (>=2.3.2,<3.0.0)"
+    "pandas (>=2.3.2,<3.0.0)",
 ]
 
 

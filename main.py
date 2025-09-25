@@ -1,6 +1,6 @@
-# подключаем модули для dotenv
-from dotenv import dotenv_values
-config = dotenv_values('.env')
+# Загружаем переменные окружения
+from config import get_config
+cfg = get_config()
 
 #Импортируем основную логику
 from handlers.fnsi import semd_1520
@@ -18,7 +18,7 @@ from threading import Thread
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-bot = telebot.TeleBot(str(config['BOT_TOKEN']))
+bot = telebot.TeleBot(cfg.app.bot_token)
 
 # приветственный текст
 start_txt = 'Привет!\nЭто бот - информатор о версиях СЭМД.\n\
@@ -94,7 +94,7 @@ def check_updates():
         res, upd_msg = nsi_passport_updater(el)
         if res:
             try:
-                for chat_id in config['UPDS_MAILING_LIST'].split(','):
+                for chat_id in cfg.accounts.updates_mailing_list:
                     bot.send_message(chat_id, upd_msg, parse_mode='html',
                                     disable_web_page_preview=True)
             except telebot.apihelper.ApiTelegramException as e:
@@ -109,11 +109,9 @@ def start_schedule():
 
 # Запускаем бота
 if __name__ == '__main__':
-    Thread(target=start_schedule, args=()).start()
-    while True:
-        # в бесконечном цикле постоянно опрашиваем бота — есть ли новые сообщения
-        try:
-            bot.polling(none_stop=True, interval=0)
-        # если возникла ошибка — сообщаем про исключение и продолжаем работу
-        except Exception as e:
-            print('Сработало исключение!\n', e)
+    Thread(target=start_schedule, args=(), daemon=True).start()
+    try:
+        # Блокирующий запуск с авто‑переподключением
+        bot.infinity_polling()
+    except KeyboardInterrupt:
+        print('Остановка по Ctrl-C')
