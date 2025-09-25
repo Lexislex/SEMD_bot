@@ -1,9 +1,9 @@
 [project]
 name = "semd-bot"
-version = "0.1.0"
-description = ""
+version = "1.0.0"
+description = "FNSI update monitoring. Check SEMD version"
 authors = [
-    {name = "Your Name",email = "you@example.com"}
+    {name = "Alexey Alepko",email = "AlepkoAA@mos.ru"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
