@@ -1,10 +1,15 @@
 import sqlite3
 from datetime import datetime
 from telebot import types
+from utils.database import create_table_nsi_passport
 
 # подключаем модули для dotenv
 from config import get_config
 cfg = get_config()
+
+# Настройка логирования
+import logging
+logger = logging.getLogger(__name__)
 
 def add_user(id, usename, first_name, last_name):
     conn = sqlite3.connect(cfg.paths.user_db_path)
@@ -24,7 +29,7 @@ def add_user(id, usename, first_name, last_name):
             (id, usename, first_name, last_name, datetime.now().isoformat()))
         conn.commit()
     except Exception as e:
-        print('Warning:', e)
+        logger.warning(f'Warning: {e}')
         conn.commit()
         conn.close()
 
@@ -52,7 +57,7 @@ def add_log(message):
         conn.commit()
         conn.close()
     except Exception as e:
-        print('Warning:', e)
+        logger.warning(f'Warning: {e}')
         conn.commit()
         conn.close()
 
@@ -66,27 +71,10 @@ def get_activity(start_date = '', stop_date = ''):
         conn.close()
         return res
     except Exception as e:
-        print('Warning:', e)
+        logger.warning(f'Warning: {e}')
         conn.close()
         return None
     
-def create_table_nsi_passport():
-       # Подключение к базе данных
-    con = sqlite3.connect(cfg.paths.fnsi_db_path)
-    cur = con.cursor()
-    try:
-        cur.execute("CREATE TABLE nsi_passport"\
-                    "(ID, Name, ShortName, lastUpdate, version, "\
-                    "releaseNotes, add_date);")
-        con.commit()
-        # Закрываем подключение к базе
-        con.close()
-    except Exception as e:
-        print('Warning:', e)
-        # Закрываем подключение к базе
-        con.close()
-
-
 def add_nsi_passport(to_db: list) -> bool:
     """Эта функция проверяет наличие информации о справочнике ФНСИ в базе 
     и при отстутсвии добавляет в базу информацию о справочнике ФНСИ.
@@ -128,12 +116,12 @@ def add_nsi_passport(to_db: list) -> bool:
             # Закрываем подключение к базе
             con.close()
         except Exception as e:
-            print('nen!')
-            print('Warning:', e)
+            logger.warning(f'nen!')
+            logger.warning(f'Warning: {e}')
             # Закрываем подключение к базе
             con.close()
     return res
 
 if __name__ == '__main__':
-    print('This module is not for direct call')
+    logger.warning('This module is not for direct call')
     exit(1)

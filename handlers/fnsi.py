@@ -5,7 +5,11 @@ locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 from datetime import datetime
 from tabulate import tabulate
 # from sql import create_table_nsi_passport
-from handlers.file_utils import download_file
+from utils.file_utils import download_file
+
+# Настройка логирования
+import logging
+logger = logging.getLogger(__name__)
 
 # подключаем модули для dotenv
 from config import get_config
@@ -72,7 +76,7 @@ class fnsi_version():
                 [self.fnsi]
             )
         except Exception as e:
-            print('Warning:', e)
+            logger.warning(f'Warning: {e}')
             con.close()
         try:
             ver = cur.fetchone()[0]
@@ -89,7 +93,7 @@ class fnsi_version():
         try:
             cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nsi_passport'")
         except Exception as e:
-                print('Warning:', e)
+                logger.warning(f'Warning: {e}')
                 # Закрываем подключение к базе
                 con.close()
         try:
@@ -102,7 +106,7 @@ class fnsi_version():
                 [self.fnsi, self.latest]
             )
         except Exception as e:
-            print('Warning:', e)
+            logger.warning(f'Warning: {e}')
         try:
             rel_notes = cur.fetchone()[0]
         except Exception as e:
@@ -113,5 +117,5 @@ class fnsi_version():
         return rel_notes
     
 if __name__ == '__main__':
-    print('This module is not for direct call')
+    logger.warning('This module is not for direct call')
     exit(1)

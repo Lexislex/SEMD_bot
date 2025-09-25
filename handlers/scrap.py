@@ -1,16 +1,17 @@
 import requests
 import dateutil.parser as parser
 from datetime import datetime
-from typing import Optional, Tuple, Dict, Any
+from typing import Tuple
 from handlers.fnsi import fnsi_version
 from handlers.sql import add_nsi_passport
-import logging
-from config import get_config
-# Настройка логирования
-logging.basicConfig(level=logging.WARNING)
-logger = logging.getLogger(__name__)
+from utils.text_formatters import format_releaseNotes
 
+from config import get_config
 cfg = get_config()
+
+# Настройка логирования
+import logging
+logger = logging.getLogger(__name__)
 
 def get_version(nsi: str, ver: str = 'latest') -> dict:
     """
@@ -50,41 +51,34 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
         
     except requests.exceptions.Timeout:
         error_msg = f"Таймаут запроса к ФНСИ для справочника {nsi}"
-        logger.error(error_msg)
         raise ConnectionError(error_msg)
         
     except requests.exceptions.ConnectionError:
         error_msg = f"Ошибка соединения с ФНСИ для справочника {nsi}"
-        logger.error(error_msg)
         raise ConnectionError(error_msg)
         
     except requests.exceptions.RequestException as e:
         error_msg = f"Ошибка запроса к ФНСИ для {nsi}: {str(e)}"
-        logger.error(error_msg)
         raise ConnectionError(error_msg)
     
     # Проверяем, что ответ не пустой
     if not response.content:
         error_msg = f"Пустой ответ от ФНСИ для справочника {nsi}"
-        logger.error(error_msg)
         raise ValueError(error_msg)
     
     try:
         data = response.json()['list'][0]
     except ValueError as e:
         error_msg = f"Невалидный JSON ответ от ФНСИ для {nsi}: {str(e)}"
-        logger.error(error_msg)
         raise ValueError(error_msg)
 
     # Проверяем, что data не None и является словарем
     if data is None:
         error_msg = f"Ответ от ФНСИ для {nsi} равен None"
-        logger.error(error_msg)
         raise ValueError(error_msg)
     
     if not isinstance(data, dict):
         error_msg = f"Ответ от ФНСИ для {nsi} не является словарем: {type(data)}"
-        logger.error(error_msg)
         raise ValueError(error_msg)
     
     # Проверка обязательных полей в ответе
@@ -93,7 +87,6 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
 
     if missing_fields:
         error_msg = f"Отсутствуют обязательные поля в ответе ФНСИ для {nsi}: {', '.join(missing_fields)}"
-        logger.error(error_msg)
         raise ValueError(error_msg)
     
     # Проверяем, что обязательные поля не None, кроме releaseNotes
@@ -103,7 +96,6 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
             continue
         if data.get(field) is None:
             error_msg = f"Поле '{field}' равно None в ответе ФНСИ для {nsi}"
-            logger.error(error_msg)
             raise ValueError(error_msg)
     
     update = datetime.strptime(data['publishDate'], "%d.%m.%Y %H:%M")
@@ -118,65 +110,6 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
     
     logger.info(f"Успешно получена информация для справочника {nsi}, версия {data['version']}")
     return fnsi_info
-
-def format_releaseNotes(relNotes: Optional[str]) -> str:
-    """
-    Форматирует примечания к выпуску.
-    
-    Args:
-        relNotes: сырые примечания к выпуску
-    
-    Returns:
-        str: отформатированные примечания
-    """
-    if relNotes is None:
-        return "Нет информации об изменениях"
-    
-    try:
-        # Очистка строки
-        cleaned_notes = relNotes.replace('\n', '').strip()
-        if not cleaned_notes or cleaned_notes == ';':
-            return "Нет информации об изменениях"
-        
-        # Удаляем завершающую точку с запятой если есть
-        if cleaned_notes.endswith(';'):
-            cleaned_notes = cleaned_notes[:-1]
-        
-        data = {}
-        
-        # Обрабатываем каждый элемент отдельно
-        for item in cleaned_notes.split(';'):
-            item = item.strip()
-            if not item:
-                continue
-                
-            # Разделяем только если есть двоеточие
-            if ':' in item:
-                parts = item.split(':', 1)  # Разделяем только по первому двоеточию
-                key = parts[0].strip()
-                value = parts[1].strip() if len(parts) > 1 else ''
-                
-                # Добавляем только если значение не '0'
-                if value != '0':
-                    data[key] = value
-            else:
-                # Если нет двоеточия, добавляем как ключ с пустым значением
-                data[item] = ''
-    
-    except Exception as e:
-        error_msg = f"Ошибка обработки изменений: {str(e)}"
-        logger.error(f"{error_msg}, исходный текст: {relNotes}")
-        return error_msg
-    
-    # Формируем результат
-    if not data:
-        return "Нет информации об изменениях"
-    
-    result_string = '\n'.join(
-        f"{key}: {value}" if value else f"{key}" 
-        for key, value in data.items()
-    )
-    return result_string
 
 def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, str]:
     """
@@ -242,7 +175,7 @@ def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, str
             except Exception as e:
                 # Если возникла ошибка при формировании сообщения, НЕ добавляем в базу
                 error_msg = f"Ошибка при формировании сообщения для справочника {fnsi_oid}: {str(e)}"
-                logger.error(error_msg)
+                logger.exception(error_msg)
                 return False, error_msg
         else:
             logger.info(f"Обновлений для справочника {fnsi_oid} не найдено")
@@ -259,5 +192,5 @@ def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, str
         return False, error_msg
 
 if __name__ == '__main__':
-    print('This module is not for direct call')
+    logger.warning('This module is not for direct call')
     exit(1)

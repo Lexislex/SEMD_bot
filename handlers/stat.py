@@ -2,14 +2,14 @@ import datetime
 import handlers.sql as sql
 import pandas as pd
 from tabulate import tabulate
+from utils.date_utils import next_weekday
 # подключаем модули для dotenv
 from config import get_config
 cfg = get_config()
 
-def next_weekday(d, weekday, week):
-    days_ahead = weekday - d.weekday()
-    days_ahead += (7 * week)
-    return d + datetime.timedelta(days_ahead)
+# Настройка логирования
+import logging
+logger = logging.getLogger(__name__)
 
 def get_statistics(week=-3):
     message = ''
@@ -29,5 +29,5 @@ def get_statistics(week=-3):
     return message
 
 if __name__ == '__main__':
-    print('This module is not for direct call')
+    logger.warning('This module is not for direct call')
     exit(1)

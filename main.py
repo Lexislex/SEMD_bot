@@ -2,12 +2,19 @@
 from config import get_config
 cfg = get_config()
 
+# Настройка логирования
+from utils.logging_setup import setup_logging
+setup_logging(cfg)
+
+import logging
+logger = logging.getLogger(__name__)
+
 #Импортируем основную логику
 from handlers.fnsi import semd_1520
 from handlers.sql import add_log, add_user
 from handlers.stat import get_statistics
 from handlers.scrap import nsi_passport_updater
-from handlers.data import NSI_LIST
+from utils.data import NSI_LIST
 
 # Импортируем библитеки расписания
 import schedule
@@ -98,10 +105,13 @@ def check_updates():
                     bot.send_message(chat_id, upd_msg, parse_mode='html',
                                     disable_web_page_preview=True)
             except telebot.apihelper.ApiTelegramException as e:
-                print(f"Не удалось отправить сообщение пользователю {chat_id}: {e}")
+                logger.error(f"Не удалось отправить сообщение пользователю {chat_id}: {e}")
         
 def start_schedule():
-    schedule.every(15).minutes.do(check_updates,)
+    if cfg.app.env == 'development':
+        schedule.every(1).minutes.do(check_updates,)
+    else:
+        schedule.every(15).minutes.do(check_updates,)
 
     while True:
         schedule.run_pending()
@@ -114,4 +124,4 @@ if __name__ == '__main__':
         # Блокирующий запуск с авто‑переподключением
         bot.infinity_polling()
     except KeyboardInterrupt:
-        print('Остановка по Ctrl-C')
+        logger.info('Остановка по Ctrl-C')

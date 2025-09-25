@@ -5,6 +5,10 @@ import requests
 from config import get_config
 cfg = get_config()
 
+# Настройка логирования
+import logging
+logger = logging.getLogger(__name__)
+
 def download_file(nsi:str, ver: str, path: str=cfg.paths.files_dir) -> bool:
     """ Эта функция удаляет все версии справочника в папке и скачивает
     необходимый архив со справочником в заданную папку.
@@ -31,7 +35,7 @@ def download_file(nsi:str, ver: str, path: str=cfg.paths.files_dir) -> bool:
         # Скачиваем файл
         with open(os.path.join(path, out_file_name), 'wb') as out_stream:
             req = requests.get(
-                f'{cfg.apis.fnsi_file_url}/{out_file_name}',
+                f'{cfg.apis.fnsi_files_url}/{out_file_name}',
                 stream=True, verify=cfg.paths.mzrf_cert_path)
             if req.status_code != 200:
                 raise FileNotFoundError(req.json()['resultText'])
@@ -40,11 +44,11 @@ def download_file(nsi:str, ver: str, path: str=cfg.paths.files_dir) -> bool:
                 out_stream.write(chunk)
         return True
     except Exception as e:
-        print('Warning:', e)
+        logger.warning(f'Warning: {e}')
         if os.path.exists(os.path.join(path, out_file_name)):
             os.remove(os.path.join(path, out_file_name))
         return False
     
 if __name__ == '__main__':
-    print('This module is not for direct call')
+    logger.warning('This module is not for direct call')
     exit(1)

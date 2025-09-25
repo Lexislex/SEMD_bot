@@ -57,7 +57,7 @@ class ExternalAPIsConfig:
     # Секреты и токены — только из .env
     fnsi_api_url: Optional[str]
     fnsi_api_key: Optional[str]
-    fnsi_file_url: Optional[str]
+    fnsi_files_url: Optional[str]
     # добавляйте другие интеграции по мере роста
 
 @dataclass(frozen=True)
@@ -88,7 +88,7 @@ def get_config() -> Config:
 
     # Внешние API
     fnsi_api_url = _read_env("FNSI_API_URL")
-    fnsi_file_url = _read_env("FNSI_FILE_URL")
+    fnsi_files_url = _read_env("FNSI_FILES_URL")
     fnsi_api_key = _read_env("FNSI_API_KEY")
 
     app_cfg = AppConfig(
@@ -115,7 +115,7 @@ def get_config() -> Config:
 
     apis_cfg = ExternalAPIsConfig(
         fnsi_api_url=fnsi_api_url,
-        fnsi_file_url=fnsi_file_url,
+        fnsi_files_url=fnsi_files_url,
         fnsi_api_key=fnsi_api_key,
     )
 
