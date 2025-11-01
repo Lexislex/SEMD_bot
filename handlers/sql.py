@@ -75,7 +75,7 @@ def get_activity(start_date = '', stop_date = ''):
         conn.close()
         return None
     
-def add_nsi_passport(to_db: list) -> bool:
+def add_nsi_passport(to_db: dict) -> bool:
     """Эта функция проверяет наличие информации о справочнике ФНСИ в базе 
     и при отстутсвии добавляет в базу информацию о справочнике ФНСИ.
     если информация не добавлялась возвращается текст "Обновлений нет",

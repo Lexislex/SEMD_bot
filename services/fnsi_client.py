@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Tuple
 from handlers.fnsi import fnsi_version
 from handlers.sql import add_nsi_passport
-from utils.text_formatters import format_releaseNotes
 
 from config import get_config
 cfg = get_config()
@@ -111,85 +110,58 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
     logger.info(f"Успешно получена информация для справочника {nsi}, версия {data['version']}")
     return fnsi_info
 
-def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, str]:
+def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, dict]:
     """
     Обновляет паспорт справочника ФНСИ.
-    
+
     Args:
         fnsi_oid: OID справочника
         vers: версия для проверки
-    
+
     Returns:
-        Tuple[bool, str]: (обновлен ли справочник, сообщение о результате)
+        Tuple[bool, dict]:
+            - bool: обновлен ли справочник
+            - dict: информация о справочнике (если обновлен) или None (если нет/ошибка)
     """
     try:
         # Получаем информацию о текущей версии из базы
         fnsi = fnsi_version(fnsi_oid)
 
-            # Проверяем, что объект fnsi не None
+        # Проверяем, что объект fnsi не None
         if fnsi is None:
-            error_msg = f"Не удалось получить информацию о справочнике {fnsi_oid} из базы"
-            logger.error(error_msg)
-            return False, error_msg
-        
+            logger.warning(f"Не удалось получить информацию о справочнике {fnsi_oid} из базы")
+            return False, None
+
         # Получаем актуальную информацию с ФНСИ
         fnsi_info = get_version(fnsi_oid, vers)
-        
+
         # Проверяем, что fnsi_info не None и содержит необходимые поля
         if not fnsi_info or 'version' not in fnsi_info:
-            error_msg = f"Невалидная информация от ФНСИ для справочника {fnsi_oid}"
-            logger.error(error_msg)
-            return False, error_msg
-        
-        # # Дополнительная проверка всех обязательных полей
-        # required_fields = ['id', 'fullName', 'shortName', 'lastUpdate', 'version', 'releaseNotes']
-        # for field in required_fields:
-        #     if field not in fnsi_info or fnsi_info[field] is None:
-        #         error_msg = f"Отсутствует поле '{field}' в информации от ФНСИ для {fnsi_oid}"
-        #         logger.error(error_msg)
-        #         return False, error_msg
-                
+            logger.warning(f"Невалидная информация от ФНСИ для справочника {fnsi_oid}")
+            return False, None
+
         # Проверяем, есть ли обновление
         current_version = getattr(fnsi, 'latest', None)
         if current_version != fnsi_info['version']:
-            try:
-                message = (
-                    f"🆕 <b>Обновление версии</b>\n"
-                    f"Справочник: {fnsi_info['shortName']}\n"
-                    f"<a href='https://nsi.rosminzdrav.ru/dictionaries/"
-                    f"{fnsi_info['id']}/passport/{fnsi_info['version']}'>"
-                    f"{fnsi_info['id']}</a>\n"
-                    f"версия: {fnsi_info['version']}\n"
-                    f"от {(parser.parse(fnsi_info['lastUpdate'])).strftime('%H:%M %d.%m.%Y')}\n"
-                    f"{format_releaseNotes(fnsi_info['releaseNotes'])}"
-                )
-                # Пытаемся добавить новую версию в базу
-                success = add_nsi_passport(fnsi_info)
-                if success:
-                    logger.info(f"Успешно обновлен справочник {fnsi_oid} до версии {fnsi_info['version']}")
-                    return True, message
-                else:
-                    error_msg = f"Не удалось добавить справочник {fnsi_oid} в базу данных"
-                    logger.error(error_msg)
-                    return False, error_msg
-            except Exception as e:
-                # Если возникла ошибка при формировании сообщения, НЕ добавляем в базу
-                error_msg = f"Ошибка при формировании сообщения для справочника {fnsi_oid}: {str(e)}"
-                logger.exception(error_msg)
-                return False, error_msg
+            # Пытаемся добавить новую версию в базу
+            success = add_nsi_passport(fnsi_info)
+            if success:
+                logger.info(f"Успешно обновлен справочник {fnsi_oid} до версии {fnsi_info['version']}")
+                return True, fnsi_info
+            else:
+                logger.error(f"Не удалось добавить справочник {fnsi_oid} в базу данных")
+                return False, None
         else:
-            logger.info(f"Обновлений для справочника {fnsi_oid} не найдено")
-            return False, 'Обновлений нет'
-            
+            logger.debug(f"Обновлений для справочника {fnsi_oid} не найдено")
+            return False, None
+
     except (ConnectionError, ValueError) as e:
-        error_msg = f"Ошибка при обновлении справочника {fnsi_oid}: {str(e)}"
-        logger.error(error_msg)
-        return False, error_msg
-        
+        logger.error(f"Ошибка при обновлении справочника {fnsi_oid}: {str(e)}")
+        return False, None
+
     except Exception as e:
-        error_msg = f"Неожиданная ошибка при обновлении справочника {fnsi_oid}: {str(e)}"
-        logger.exception(error_msg)
-        return False, error_msg
+        logger.exception(f"Неожиданная ошибка при обновлении справочника {fnsi_oid}: {str(e)}")
+        return False, None
 
 if __name__ == '__main__':
     logger.warning('This module is not for direct call')

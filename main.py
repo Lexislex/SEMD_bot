@@ -9,23 +9,18 @@ setup_logging(cfg)
 import logging
 logger = logging.getLogger(__name__)
 
-#Импортируем основную логику
+# Импортируем основной класс архитектуры
+from core.bot import SEMDBotCore
+
+#Импортируем основную логику для SEMD Checker (временно в монолите)
 from handlers.fnsi import semd_1520
 from handlers.sql import add_log, add_user
 from handlers.stat import get_statistics
-from handlers.scrap import nsi_passport_updater
-from utils.data import NSI_LIST
-
-# Импортируем библитеки расписания
-import schedule
-import time
-from threading import Thread
-
-# подключаем модуль для Телеграма
-import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-bot = telebot.TeleBot(cfg.app.bot_token)
+# Создаём ядро бота с поддержкой плагинов
+core = SEMDBotCore(cfg)
+bot = core.bot
 
 # приветственный текст
 start_txt = 'Привет!\nЭто бот - информатор о версиях СЭМД.\n\
@@ -37,7 +32,6 @@ markup_inline.add(InlineKeyboardButton(text='искать версии СЭМД'
 
 markup_back = InlineKeyboardMarkup(row_width=1)
 markup_back.add(InlineKeyboardButton(text='<- назад', callback_data='back'))
-# markup_inline.add(item)
 
 # обрабатываем старт бота
 @bot.message_handler(commands=['start', 'about'])
@@ -96,32 +90,28 @@ def stat(message):
 def auto_answer(message):
     start(message)
     
-def check_updates():
-    for el in NSI_LIST:
-        res, upd_msg = nsi_passport_updater(el)
-        if res:
-            try:
-                for chat_id in cfg.accounts.updates_mailing_list:
-                    bot.send_message(chat_id, upd_msg, parse_mode='html',
-                                    disable_web_page_preview=True)
-            except telebot.apihelper.ApiTelegramException as e:
-                logger.error(f"Не удалось отправить сообщение пользователю {chat_id}: {e}")
-        
-def start_schedule():
-    if cfg.app.env == 'development':
-        schedule.every(1).minutes.do(check_updates,)
-    else:
-        schedule.every(15).minutes.do(check_updates,)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-
 # Запускаем бота
 if __name__ == '__main__':
-    Thread(target=start_schedule, args=(), daemon=True).start()
     try:
-        # Блокирующий запуск с авто‑переподключением
-        bot.infinity_polling()
+        logger.info("=" * 50)
+        logger.info("Запуск SEMD Bot v2.0 (Миграция на модульную архитектуру)")
+        logger.info("=" * 50)
+
+        # Загружаем плагины
+        logger.info("Загрузка плагинов...")
+        core.load_plugin('plugins.nsi_update_checker')
+        logger.info("✓ NSI Update Checker загружен")
+
+        logger.info("Все плагины загружены успешно!")
+        logger.info("=" * 50)
+
+        # Запускаем бота (включает планировщик и polling)
+        core.start()
+
     except KeyboardInterrupt:
-        logger.info('Остановка по Ctrl-C')
+        logger.info('Остановка по Ctrl+C')
+        core.shutdown()
+    except Exception as e:
+        logger.error(f"Ошибка при запуске бота: {e}", exc_info=True)
+        core.shutdown()
+        raise

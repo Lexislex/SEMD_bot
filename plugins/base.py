@@ -49,3 +49,20 @@ class ScheduledPlugin(BasePlugin):
     def get_schedule_config(self) -> Dict[str, Any]:
         """Конфигурация расписания"""
         pass
+    
+    def get_scheduled_tasks(self) -> List[Dict[str, Any]]:
+        """Использует get_schedule_config для создания задачи"""
+        config = self.get_schedule_config()
+        
+        return [
+            {
+                'func': self.check_updates,  # Главная функция для выполнения
+                'interval': config['interval'],
+                'unit': config['unit']
+            }
+        ]
+    
+    @abstractmethod
+    def check_updates(self):
+        """Метод, который будет выполняться по расписанию"""
+        pass

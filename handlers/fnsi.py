@@ -1,10 +1,7 @@
 import pandas as pd
-import locale
 import sqlite3
-locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 from datetime import datetime
 from tabulate import tabulate
-# from sql import create_table_nsi_passport
 from utils.file_utils import download_file
 
 # Настройка логирования
@@ -63,9 +60,6 @@ class fnsi_version():
     def get_ver(self):
         con = sqlite3.connect(cfg.paths.fnsi_db_path)
         cur = con.cursor()
-        # cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nsi_passport'")
-        # table_exist = cur.fetchone()
-        # if not table_exist: create_table_nsi_passport()
         try:
             cur.execute(
                 "SELECT \
@@ -81,7 +75,6 @@ class fnsi_version():
         try:
             ver = cur.fetchone()[0]
         except Exception as e:
-            # print('Warning:', e)
             con.close()
             ver = 'empty version'
         con.close()

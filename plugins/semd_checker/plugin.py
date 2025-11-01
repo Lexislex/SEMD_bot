@@ -1,3 +1,4 @@
+import logging
 from typing import List, Dict, Any
 from plugins.base import BasePlugin
 from .handlers import SEMDHandlers
@@ -5,6 +6,7 @@ from .handlers import SEMDHandlers
 class Plugin(BasePlugin):
     def __init__(self, bot, config):
         super().__init__(bot, config)
+        self.logger = logging.getLogger(__name__)
         self.handlers = SEMDHandlers(bot, config)
         
     def get_name(self) -> str:
