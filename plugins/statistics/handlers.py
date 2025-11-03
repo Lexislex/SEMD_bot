@@ -79,8 +79,8 @@ class StatisticsHandlers:
             df.index.name = None
             df = df.fillna(0)
 
-            # Truncate activity names to 15 characters with ellipsis
-            df.index = df.index.map(lambda x: x[:15] + '...' if len(x) > 15 else x)
+            # Truncate activity names to 12 characters with ellipsis
+            df.index = df.index.map(lambda x: x[:12] + '...' if len(x) > 12 else x)
 
             # Format and send
             stats_text = (
@@ -166,8 +166,8 @@ class StatisticsHandlers:
             df.index.name = None
             df = df.fillna(0)
 
-            # Truncate activity names to 15 characters with ellipsis
-            df.index = df.index.map(lambda x: x[:15] + '...' if len(x) > 15 else x)
+            # Truncate activity names to 12 characters with ellipsis
+            df.index = df.index.map(lambda x: x[:12] + '...' if len(x) > 12 else x)
 
             # Format and send
             stats_text = (
