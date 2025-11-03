@@ -32,7 +32,8 @@ class SEMDVersionFetcher:
                 "ORDER by lastUpdate DESC limit 1",
                 [self.fnsi_id]
             )
-            ver = cur.fetchone()[0] if cur.fetchone() else 'empty version'
+            result = cur.fetchone()
+            ver = result[0] if result else 'empty version'
         except Exception as e:
             logger.warning(f'Warning: {e}')
             ver = 'empty version'
