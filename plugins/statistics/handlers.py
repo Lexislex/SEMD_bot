@@ -3,7 +3,7 @@ import datetime
 import logging
 import pandas as pd
 from tabulate import tabulate
-from telebot.types import Message
+from telebot.types import Message, CallbackQuery
 from utils.date_utils import next_weekday
 from services.database_service import get_activity, add_log
 
@@ -81,3 +81,39 @@ class StatisticsHandlers:
                 message.chat.id,
                 f"❌ Ошибка при получении статистики: {e}"
             )
+
+    def handle_stat_menu(self, call: CallbackQuery):
+        """Handle menu button click for Statistics plugin"""
+        try:
+            # Check admin access
+            if call.from_user.id not in self.config.accounts.admin_ids:
+                self.bot.answer_callback_query(
+                    call.id,
+                    "❌ Доступ запрещен. Только для администраторов.",
+                    show_alert=True
+                )
+                return
+
+            menu_text = (
+                "📊 <b>Статистика</b>\n\n"
+                "<b>Функция:</b> Просмотр статистики активности пользователей\n\n"
+                "<b>Доступные команды:</b>\n"
+                "• /stat - Показать статистику за последние 3 недели\n\n"
+                "<b>Версия:</b> 1.0.0\n\n"
+                "⚠️ <i>Только для администраторов</i>"
+            )
+
+            from .keyboards import get_back_button
+            markup = get_back_button()
+
+            self.bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=menu_text,
+                parse_mode='html',
+                reply_markup=markup
+            )
+            self.bot.answer_callback_query(call.id)
+        except Exception as e:
+            self.logger.error(f"Error in statistics menu handler: {e}")
+            self.bot.answer_callback_query(call.id, "❌ Ошибка при обработке запроса", show_alert=True)

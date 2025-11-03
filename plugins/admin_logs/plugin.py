@@ -44,6 +44,15 @@ class Plugin(BasePlugin):
             }
         ]
 
+    def get_callbacks(self) -> List[Dict[str, Any]]:
+        """Register callback handlers"""
+        return [
+            {
+                'params': {'func': lambda call: call.data == "plugin_AdminLogs"},
+                'handler': self.handlers.handle_logs_menu
+            }
+        ]
+
     def shutdown(self):
         """Shutdown plugin"""
         self.logger.info(f"Plugin {self.get_name()} shutting down")

@@ -1,6 +1,6 @@
 """Plugin Manager plugin handlers"""
 import logging
-from telebot.types import Message
+from telebot.types import Message, CallbackQuery
 
 logger = logging.getLogger(__name__)
 
@@ -60,3 +60,39 @@ class PluginManagerHandlers:
                 message.chat_id,
                 f"❌ Ошибка при получении списка плагинов: {e}"
             )
+
+    def handle_plugin_manager_menu(self, call: CallbackQuery):
+        """Handle menu button click for Plugin Manager plugin"""
+        try:
+            # Check admin access
+            if call.from_user.id not in self.config.accounts.admin_ids:
+                self.bot.answer_callback_query(
+                    call.id,
+                    "❌ Доступ запрещен. Только для администраторов.",
+                    show_alert=True
+                )
+                return
+
+            menu_text = (
+                "🔌 <b>Управление плагинами</b>\n\n"
+                "<b>Функция:</b> Просмотр списка загруженных плагинов и их статуса\n\n"
+                "<b>Доступные команды:</b>\n"
+                "• /plugins - Показать список всех загруженных плагинов\n\n"
+                "<b>Версия:</b> 1.0.0\n\n"
+                "⚠️ <i>Только для администраторов</i>"
+            )
+
+            from .keyboards import get_back_button
+            markup = get_back_button()
+
+            self.bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=menu_text,
+                parse_mode='html',
+                reply_markup=markup
+            )
+            self.bot.answer_callback_query(call.id)
+        except Exception as e:
+            self.logger.error(f"Error in plugin manager menu handler: {e}")
+            self.bot.answer_callback_query(call.id, "❌ Ошибка при обработке запроса", show_alert=True)

@@ -46,7 +46,12 @@ class Plugin(BasePlugin):
 
     def get_callbacks(self) -> List[Dict[str, Any]]:
         """Register callback handlers"""
-        return []
+        return [
+            {
+                'params': {'func': lambda call: call.data == "plugin_SEMDChecker"},
+                'handler': self.handlers.handle_semd_menu
+            }
+        ]
 
     def shutdown(self):
         """Shutdown plugin"""

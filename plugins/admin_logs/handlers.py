@@ -1,6 +1,6 @@
 """Admin Logs plugin handlers"""
 import logging
-from telebot.types import Message
+from telebot.types import Message, CallbackQuery
 from services.database_service import get_activity
 from datetime import datetime, timedelta
 
@@ -62,3 +62,39 @@ class AdminLogsHandlers:
                 message.chat.id,
                 f"❌ Ошибка при получении логов: {e}"
             )
+
+    def handle_logs_menu(self, call: CallbackQuery):
+        """Handle menu button click for Admin Logs plugin"""
+        try:
+            # Check admin access
+            if call.from_user.id not in self.config.accounts.admin_ids:
+                self.bot.answer_callback_query(
+                    call.id,
+                    "❌ Доступ запрещен. Только для администраторов.",
+                    show_alert=True
+                )
+                return
+
+            menu_text = (
+                "📋 <b>Логи системы</b>\n\n"
+                "<b>Функция:</b> Просмотр логов активности пользователей\n\n"
+                "<b>Доступные команды:</b>\n"
+                "• /logs - Показать логи за последние 7 дней\n\n"
+                "<b>Версия:</b> 1.0.0\n\n"
+                "⚠️ <i>Только для администраторов</i>"
+            )
+
+            from .keyboards import get_back_button
+            markup = get_back_button()
+
+            self.bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=menu_text,
+                parse_mode='html',
+                reply_markup=markup
+            )
+            self.bot.answer_callback_query(call.id)
+        except Exception as e:
+            self.logger.error(f"Error in logs menu handler: {e}")
+            self.bot.answer_callback_query(call.id, "❌ Ошибка при обработке запроса", show_alert=True)

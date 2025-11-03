@@ -88,3 +88,29 @@ class SEMDHandlers:
                 message.chat.id,
                 "❌ Ошибка при получении информации"
             )
+
+    def handle_semd_menu(self, call: CallbackQuery):
+        """Handle menu button click for SEMD Checker plugin"""
+        try:
+            menu_text = (
+                "🔍 <b>Поиск версий СЭМД</b>\n\n"
+                "<b>Функция:</b> Поиск информации о версиях структурированных электронных медицинских документов (СЭМД)\n\n"
+                "<b>Как использовать:</b>\n"
+                "1. Отправьте номер СЭМД OID\n"
+                "2. Получите список доступных версий\n"
+                "3. Посмотрите даты начала и завершения использования\n\n"
+                "<b>Версия:</b> 1.0.0"
+            )
+
+            markup = get_back_button()
+            self.bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=menu_text,
+                parse_mode='html',
+                reply_markup=markup
+            )
+            self.bot.answer_callback_query(call.id)
+        except Exception as e:
+            self.logger.error(f"Error in SEMD menu handler: {e}")
+            self.bot.answer_callback_query(call.id, "❌ Ошибка при обработке запроса", show_alert=True)
