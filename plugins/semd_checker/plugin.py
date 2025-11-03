@@ -41,6 +41,10 @@ class Plugin(BasePlugin):
             {
                 'params': {'commands': ['about']},
                 'handler': self.handlers.handle_semd_about
+            },
+            {
+                'params': {'content_types': ['text']},
+                'handler': self.handlers.handle_semd_search
             }
         ]
 

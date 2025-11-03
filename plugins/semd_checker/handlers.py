@@ -19,6 +19,10 @@ class SEMDHandlers:
     def handle_semd_search(self, message: Message):
         """Handle text messages - search for SEMD by OID or name"""
         try:
+            # Ignore commands (they start with /)
+            if message.text.startswith('/'):
+                return
+
             # Log the activity
             add_log(message)
 
