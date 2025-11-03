@@ -37,12 +37,7 @@ class Plugin(BasePlugin):
 
     def get_commands(self) -> List[Dict[str, Any]]:
         """Register commands"""
-        return [
-            {
-                'params': {'commands': ['stat']},
-                'handler': self.handlers.handle_stat
-            }
-        ]
+        return []
 
     def get_callbacks(self) -> List[Dict[str, Any]]:
         """Register callback handlers"""
