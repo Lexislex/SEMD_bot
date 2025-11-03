@@ -31,7 +31,7 @@ class SEMDHandlers:
             # Try to parse as OID (numeric)
             try:
                 semd_oid = int(search_text)
-                name, versions, doc_type, link_1520, link_1522 = self.semd.get_semd_versions(semd_oid)
+                name, versions, doc_type, link_1520, link_1522, dict_version = self.semd.get_semd_versions(semd_oid)
 
                 if name is None:
                     self.bot.send_message(
@@ -43,11 +43,11 @@ class SEMDHandlers:
                 # Format response
                 response = (
                     f"🏥 <b>{name}</b>\n\n"
-                    f"<b>Доступные версии:</b>\n"
+                    f"<b>Доступные версии (справочник ЭМД v{dict_version}):</b>\n"
                     f"<pre>{versions}</pre>\n\n"
                     f"<b>Справочники НСИ:</b>\n"
-                    f"• 1520 - Структура документов {link_1520}\n"
-                    f"• 1522 - Описание элементов {link_1522}\n"
+                    f"• Все версии ЭМД {link_1520}\n"
+                    f"• Вид ЭМД {link_1522}\n"
                 )
 
                 markup = get_back_button()

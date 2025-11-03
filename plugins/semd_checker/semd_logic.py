@@ -105,16 +105,16 @@ class SEMD1520:
             semd_oid: SEMD OID to search for
 
         Returns:
-            tuple: (document_name, versions_table, document_type, link_1520, link_1522)
+            tuple: (document_name, versions_table, document_type, link_1520, link_1522, dictionary_version)
         """
         if self.df is None:
-            return None, "Ошибка: не удалось загрузить данные СЭМД", None, None, None
+            return None, "Ошибка: не удалось загрузить данные СЭМД", None, None, None, None
 
         try:
             # Find document type by OID
             semd_type_row = self.df[self.df['OID'] == int(semd_oid)]
             if semd_type_row.empty:
-                return None, f"СЭМД с OID {semd_oid} не найдена", None, None, None
+                return None, f"СЭМД с OID {semd_oid} не найдена", None, None, None, None
 
             doc_type = semd_type_row['TYPE'].iloc[0]
 
@@ -150,11 +150,11 @@ class SEMD1520:
                 headers=['ID', 'Start', 'Stop']
             )
 
-            return name, versions_table, doc_type, link_1520, link_1522
+            return name, versions_table, doc_type, link_1520, link_1522, self.latest_version
 
         except Exception as e:
             logger.error(f"Error getting SEMD versions: {e}")
-            return None, f"Ошибка при получении версий: {e}", None, None, None
+            return None, f"Ошибка при получении версий: {e}", None, None, None, None
 
     def get_newest_versions(self, count=1):
         """

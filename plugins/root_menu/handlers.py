@@ -25,6 +25,8 @@ class RootMenuHandlers:
         )
 
         available_plugins = self.plugin_manager.get_available_plugins(user_id)
+        # Filter out RootMenu plugin from the menu
+        available_plugins = [p for p in available_plugins if p.get_name() != "RootMenu"]
         keyboard = get_main_menu_keyboard(available_plugins)
 
         self.bot.send_message(message.chat.id, welcome_text, reply_markup=keyboard)
@@ -35,6 +37,8 @@ class RootMenuHandlers:
         menu_text = "📋 Главное меню:\n\nВыбери функцию:"
 
         available_plugins = self.plugin_manager.get_available_plugins(user_id)
+        # Filter out RootMenu plugin from the menu
+        available_plugins = [p for p in available_plugins if p.get_name() != "RootMenu"]
         keyboard = get_main_menu_keyboard(available_plugins)
 
         self.bot.send_message(message.chat.id, menu_text, reply_markup=keyboard)
@@ -45,6 +49,8 @@ class RootMenuHandlers:
         menu_text = "📋 Вернулись в главное меню.\n\nВыбери функцию:"
 
         available_plugins = self.plugin_manager.get_available_plugins(user_id)
+        # Filter out RootMenu plugin from the menu
+        available_plugins = [p for p in available_plugins if p.get_name() != "RootMenu"]
         keyboard = get_main_menu_keyboard(available_plugins)
 
         self.bot.edit_message_text(
