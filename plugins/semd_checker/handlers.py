@@ -1,6 +1,5 @@
 """SEMD Checker plugin handlers"""
 import logging
-from telebot import types
 from telebot.types import Message, CallbackQuery
 from services.database_service import add_log
 from utils.message_manager import get_message_manager, cleanup_previous_message

@@ -18,10 +18,6 @@ class Plugin(BasePlugin):
         self.plugin_manager = None
         self.logger = logging.getLogger(__name__)
 
-    def set_plugin_manager(self, plugin_manager):
-        """Set reference to plugin manager for accessing other plugins"""
-        self.plugin_manager = plugin_manager
-
     def get_name(self) -> str:
         """Get plugin name"""
         return "RootMenu"

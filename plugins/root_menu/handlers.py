@@ -1,6 +1,5 @@
 """Handlers for Root Menu plugin"""
 import logging
-from telebot import types
 from utils.message_manager import get_message_manager, cleanup_previous_message
 from .keyboards import get_main_menu_keyboard, get_back_button
 

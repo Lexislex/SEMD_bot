@@ -19,12 +19,6 @@ class Plugin(BasePlugin):
         self.handlers = None
         self.plugin_manager = None
 
-    def set_plugin_manager(self, plugin_manager):
-        """Set reference to plugin manager"""
-        self.plugin_manager = plugin_manager
-        if self.handlers:
-            self.handlers.plugin_manager = plugin_manager
-
     def get_name(self) -> str:
         """Get plugin name"""
         return "PluginManager"
