@@ -1,5 +1,6 @@
 import logging
 from telebot import apihelper
+from telebot.types import CallbackQuery
 from services.fnsi_client import nsi_passport_updater
 from .data import NSI_LIST, NSI_DICTIONARIES
 from .formatters import (
@@ -101,3 +102,39 @@ class NSIUpdHandlers:
 
             except Exception as e:
                 self.logger.error(f"Ошибка при проверке обновлений для справочника {nsi_oid}: {e}")
+
+    def handle_nsi_checker_menu(self, call: CallbackQuery):
+        """
+        Handle the NSI Update Checker menu button click.
+        Shows information about where updates are posted.
+
+        Args:
+            call: CallbackQuery object from Telegram
+        """
+        try:
+            info_text = (
+                "📢 <b>Монитор обновлений справочников НСИ</b>\n\n"
+                "Обновления справочников НСИ постятся в канал:\n"
+                "<b>«СЭМД инфо»</b>\n\n"
+                "🔗 Приглашение в канал:\n"
+                "https://t.me/+QGan41q3n6U1MzJi\n\n"
+                "✅ Мониторим обновления следующих справочников:\n"
+                f"• Всего справочников: {len(NSI_LIST)}\n\n"
+                "Для получения уведомлений подпишитесь на канал!"
+            )
+
+            # Import here to avoid circular imports
+            from .keyboards import get_back_button
+            markup = get_back_button()
+
+            self.bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=info_text,
+                parse_mode='html',
+                reply_markup=markup
+            )
+            self.bot.answer_callback_query(call.id)
+        except Exception as e:
+            self.logger.error(f"Ошибка при обработке меню NSI Update Checker: {e}")
+            self.bot.answer_callback_query(call.id, "❌ Ошибка при обработке запроса", show_alert=True)
