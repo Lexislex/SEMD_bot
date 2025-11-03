@@ -77,6 +77,11 @@ def remove_keyboard_from_message(bot, chat_id: int, message_id: int) -> bool:
         logger.debug(f"Removed keyboard from message {message_id} in chat {chat_id}")
         return True
     except Exception as e:
+        # Ignore error if message is not modified (keyboard wasn't there)
+        error_str = str(e)
+        if "message is not modified" in error_str or "not modified" in error_str:
+            logger.debug(f"Message {message_id} had no keyboard to remove")
+            return True
         logger.debug(f"Could not remove keyboard from message {message_id}: {e}")
         return False
 

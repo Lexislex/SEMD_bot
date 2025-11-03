@@ -45,9 +45,12 @@ class StatisticsHandlers:
             activity_data = get_activity(start_date, stop_date)
 
             if not activity_data:
+                from .keyboards import get_back_button
+                markup = get_back_button()
                 sent_msg = self.bot.send_message(
                     message.chat.id,
-                    "📊 Нет данных активности за указанный период."
+                    "📊 Нет данных активности за указанный период.",
+                    reply_markup=markup
                 )
                 get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
                 return
@@ -60,9 +63,12 @@ class StatisticsHandlers:
             df = df[~df['user_id'].isin(self.config.accounts.admin_ids)]
 
             if df.empty:
+                from .keyboards import get_back_button
+                markup = get_back_button()
                 sent_msg = self.bot.send_message(
                     message.chat.id,
-                    "📊 Нет данных активности от пользователей за указанный период."
+                    "📊 Нет данных активности от пользователей за указанный период.",
+                    reply_markup=markup
                 )
                 get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
                 return
@@ -84,9 +90,12 @@ class StatisticsHandlers:
 
         except Exception as e:
             self.logger.error(f"Error in statistics handler: {e}")
+            from .keyboards import get_back_button
+            markup = get_back_button()
             sent_msg = self.bot.send_message(
                 message.chat.id,
-                f"❌ Ошибка при получении статистики: {e}"
+                f"❌ Ошибка при получении статистики: {e}",
+                reply_markup=markup
             )
             get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 

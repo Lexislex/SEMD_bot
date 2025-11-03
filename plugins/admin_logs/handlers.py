@@ -38,9 +38,12 @@ class AdminLogsHandlers:
             activity_data = get_activity(start_date, stop_date)
 
             if not activity_data:
+                from .keyboards import get_back_button
+                markup = get_back_button()
                 sent_msg = self.bot.send_message(
                     message.chat.id,
-                    "📋 Нет логов активности за последние 7 дней."
+                    "📋 Нет логов активности за последние 7 дней.",
+                    reply_markup=markup
                 )
                 get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
                 return
@@ -54,22 +57,34 @@ class AdminLogsHandlers:
                 logs_text += f"👤 {user_id} | {activity} | {date_time}\n"
 
             # Send in chunks if too long
+            from .keyboards import get_back_button
+            markup = get_back_button()
             if len(logs_text) > 4096:
                 parts = [logs_text[i:i+4096] for i in range(0, len(logs_text), 4096)]
                 last_msg = None
-                for part in parts:
-                    last_msg = self.bot.send_message(message.chat.id, part, parse_mode='html')
+                for i, part in enumerate(parts):
+                    # Add markup only to the last part
+                    is_last = (i == len(parts) - 1)
+                    last_msg = self.bot.send_message(
+                        message.chat.id,
+                        part,
+                        parse_mode='html',
+                        reply_markup=markup if is_last else None
+                    )
                 if last_msg:
                     get_message_manager().update_message(message.chat.id, last_msg.message_id, message.from_user.id)
             else:
-                sent_msg = self.bot.send_message(message.chat.id, logs_text, parse_mode='html')
+                sent_msg = self.bot.send_message(message.chat.id, logs_text, parse_mode='html', reply_markup=markup)
                 get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
         except Exception as e:
             self.logger.error(f"Error in logs handler: {e}")
+            from .keyboards import get_back_button
+            markup = get_back_button()
             sent_msg = self.bot.send_message(
                 message.chat.id,
-                f"❌ Ошибка при получении логов: {e}"
+                f"❌ Ошибка при получении логов: {e}",
+                reply_markup=markup
             )
             get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 

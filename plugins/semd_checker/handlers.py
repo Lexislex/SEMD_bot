@@ -38,9 +38,11 @@ class SEMDHandlers:
                 name, versions, doc_type, link_1520, link_1522, dict_version = self.semd.get_semd_versions(semd_oid)
 
                 if name is None:
+                    markup = get_back_button()
                     sent_msg = self.bot.send_message(
                         message.chat.id,
-                        f"❌ СЭМД с OID {semd_oid} не найдена.\n\nПопробуйте еще раз или введите корректный OID."
+                        f"❌ СЭМД с OID {semd_oid} не найдена.\n\nПопробуйте еще раз или введите корректный OID.",
+                        reply_markup=markup
                     )
                     # Track this message for later cleanup
                     get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
@@ -63,21 +65,25 @@ class SEMDHandlers:
 
             except ValueError:
                 # Not a number - inform user
+                markup = get_back_button()
                 sent_msg = self.bot.send_message(
                     message.chat.id,
                     "⚠️ Пожалуйста введите корректный SEMD OID (число).\n\n"
                     "Примеры:\n"
                     "• 123 - для поиска по номеру\n"
-                    "• 456 - для поиска другого документа"
+                    "• 456 - для поиска другого документа",
+                    reply_markup=markup
                 )
                 # Track this message for later cleanup
                 get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
         except Exception as e:
             self.logger.error(f"Error in SEMD search: {e}")
+            markup = get_back_button()
             sent_msg = self.bot.send_message(
                 message.chat.id,
-                "❌ Ошибка при поиске СЭМД. Пожалуйста попробуйте еще раз."
+                "❌ Ошибка при поиске СЭМД. Пожалуйста попробуйте еще раз.",
+                reply_markup=markup
             )
             # Track this message for later cleanup
             get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
@@ -85,6 +91,9 @@ class SEMDHandlers:
     def handle_semd_about(self, message: Message):
         """Handle /about command"""
         try:
+            # Remove keyboard from previous message
+            cleanup_previous_message(self.bot, message.chat.id)
+
             about_text = (
                 "🔍 <b>SEMD Checker</b>\n\n"
                 "<b>Функция:</b> Поиск информации о версиях структурированных электронных медицинских документов (СЭМД)\n\n"
@@ -96,14 +105,20 @@ class SEMDHandlers:
             )
 
             markup = get_back_button()
-            self.bot.send_message(message.chat.id, about_text, parse_mode='html', reply_markup=markup)
+            sent_msg = self.bot.send_message(message.chat.id, about_text, parse_mode='html', reply_markup=markup)
+            # Track this message for later cleanup
+            get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
         except Exception as e:
             self.logger.error(f"Error in about handler: {e}")
-            self.bot.send_message(
+            markup = get_back_button()
+            sent_msg = self.bot.send_message(
                 message.chat.id,
-                "❌ Ошибка при получении информации"
+                "❌ Ошибка при получении информации",
+                reply_markup=markup
             )
+            # Track this message for later cleanup
+            get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
     def handle_semd_menu(self, call: CallbackQuery):
         """Handle menu button click for SEMD Checker plugin"""

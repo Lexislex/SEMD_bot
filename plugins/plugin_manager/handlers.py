@@ -33,9 +33,12 @@ class PluginManagerHandlers:
             plugins = self.plugin_manager.plugins
 
             if not plugins:
+                from .keyboards import get_back_button
+                markup = get_back_button()
                 sent_msg = self.bot.send_message(
                     message.chat.id,
-                    "📦 Нет загруженных плагинов."
+                    "📦 Нет загруженных плагинов.",
+                    reply_markup=markup
                 )
                 get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
                 return
@@ -57,14 +60,19 @@ class PluginManagerHandlers:
                     f"   Описание: {plugin.description}\n\n"
                 )
 
-            sent_msg = self.bot.send_message(message.chat.id, plugins_text, parse_mode='html')
+            from .keyboards import get_back_button
+            markup = get_back_button()
+            sent_msg = self.bot.send_message(message.chat.id, plugins_text, parse_mode='html', reply_markup=markup)
             get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
         except Exception as e:
             self.logger.error(f"Error in plugins handler: {e}")
+            from .keyboards import get_back_button
+            markup = get_back_button()
             sent_msg = self.bot.send_message(
                 message.chat.id,
-                f"❌ Ошибка при получении списка плагинов: {e}"
+                f"❌ Ошибка при получении списка плагинов: {e}",
+                reply_markup=markup
             )
             get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
