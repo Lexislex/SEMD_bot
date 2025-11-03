@@ -44,7 +44,23 @@ class PluginManager:
         for plugin in self.plugins.values():
             tasks.extend(plugin.get_scheduled_tasks())
         return tasks
-        
+
+    def get_available_plugins(self, user_id: int) -> List[BasePlugin]:
+        """
+        Возвращает плагины, доступные для пользователя.
+
+        Args:
+            user_id: Telegram ID пользователя
+
+        Returns:
+            Список плагинов с доступом для пользователя
+        """
+        available = []
+        for plugin in self.plugins.values():
+            if plugin.has_access(user_id):
+                available.append(plugin)
+        return available
+
     def shutdown_all(self):
         """Завершает работу всех плагинов"""
         for plugin in self.plugins.values():

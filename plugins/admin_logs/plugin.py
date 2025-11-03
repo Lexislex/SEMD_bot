@@ -1,26 +1,26 @@
-"""SEMD Checker Plugin - Search for SEMD document versions"""
+"""Admin Logs Plugin - System logs and monitoring"""
 import logging
 from typing import List, Dict, Any
 from plugins.base import BasePlugin
-from .handlers import SEMDHandlers
+from .handlers import AdminLogsHandlers
 
 
 class Plugin(BasePlugin):
-    """SEMD Checker Plugin for searching document versions"""
+    """Admin Logs Plugin for viewing system logs"""
 
     # Plugin metadata
-    access_level = "all"
-    display_name = "🔍 Поиск версий СЭМД"
-    description = "Поиск информации о версиях структурированных электронных медицинских документов"
+    access_level = "admin"
+    display_name = "📋 Логи системы"
+    description = "Просмотр логов активности пользователей"
 
     def __init__(self, bot, config):
         super().__init__(bot, config)
         self.logger = logging.getLogger(__name__)
-        self.handlers = SEMDHandlers(bot, config)
+        self.handlers = AdminLogsHandlers(bot, config)
 
     def get_name(self) -> str:
         """Get plugin name"""
-        return "SEMDChecker"
+        return "AdminLogs"
 
     def get_version(self) -> str:
         """Get plugin version"""
@@ -39,14 +39,10 @@ class Plugin(BasePlugin):
         """Register commands"""
         return [
             {
-                'params': {'commands': ['about']},
-                'handler': self.handlers.handle_semd_about
+                'params': {'commands': ['logs']},
+                'handler': self.handlers.handle_logs
             }
         ]
-
-    def get_callbacks(self) -> List[Dict[str, Any]]:
-        """Register callback handlers"""
-        return []
 
     def shutdown(self):
         """Shutdown plugin"""

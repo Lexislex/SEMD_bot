@@ -38,7 +38,7 @@ class AppConfig:
 
 @dataclass(frozen=True)
 class AccountsConfig:
-    admin_id: int
+    admin_ids: List[int]
     updates_mailing_list: List[int]
 
 
@@ -99,7 +99,7 @@ def get_config() -> Config:
     )
 
     accounts_cfg = AccountsConfig(
-        admin_id = int(_read_env("ADMIN_ID")),
+        admin_ids = [int(id.strip()) for id in _read_env("ADMIN_ID").split(",")],
         updates_mailing_list = _read_env("UPDS_MAILING_LIST").split(","),
     )
 

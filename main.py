@@ -1,107 +1,66 @@
 # Загружаем переменные окружения
 from config import get_config
+
 cfg = get_config()
 
 # Настройка логирования
 from utils.logging_setup import setup_logging
+
 setup_logging(cfg)
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 # Импортируем основной класс архитектуры
 from core.bot import SEMDBotCore
 
-#Импортируем основную логику для SEMD Checker (временно в монолите)
-from handlers.fnsi import semd_1520
-from handlers.sql import add_log, add_user
-from handlers.stat import get_statistics
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 # Создаём ядро бота с поддержкой плагинов
 core = SEMDBotCore(cfg)
-bot = core.bot
 
-# приветственный текст
-start_txt = 'Привет!\nЭто бот - информатор о версиях СЭМД и обновлениях ФНСИ.\n\
-Достаточно ввести ID одной из редаций СЭМД и я покажу все редакции \
-этого СЭМД и сроки начала и окончания его регистрации в РЭМД\n\
-Информация об обновлениях ФНСИ публикуется в канале [СЭМД инфо](https://t.me/+QGan41q3n6U1MzJi)'
 
-markup_inline = InlineKeyboardMarkup(row_width=1)
-markup_inline.add(InlineKeyboardButton(text='искать версии СЭМД', callback_data='versions'))
-
-markup_back = InlineKeyboardMarkup(row_width=1)
-markup_back.add(InlineKeyboardButton(text='<- назад', callback_data='back'))
-
-# обрабатываем старт бота
-@bot.message_handler(commands=['start', 'about'])
-def start(message):
-    # Регистрация пользователя
-    add_user(message.from_user.id, message.from_user.username, \
-                 message.from_user.first_name, message.from_user.last_name)
-    # Лог активности
-    add_log(message)
-
-    # Отправляем приветственное сообщение
-    bot.send_message(message.from_user.id, start_txt, parse_mode='Markdown', reply_markup=markup_inline)
-
-def get_versions(message):
-    try:
-        semd = semd_1520().get_semd_versions(message.text)
-        bot.send_message(message.chat.id,\
-                        f'<b>{semd[0]}</b> {semd[3]}<pre>{semd[1]}</pre>Тип документа:  {semd[2]}  {semd[4]}',\
-                        parse_mode='html', disable_web_page_preview=True)
-    except:
-        bot.send_message(message.chat.id, f'ID не найден, попробуйте еще раз', parse_mode='html',
-                        disable_web_page_preview=True)
-
-    bot.register_next_step_handler(
-        bot.send_message(message.chat.id, f"Введите ID редакции СЭМД:", reply_markup=markup_back),
-        get_versions
-        )
-
-#Ответ на кнопки
-@bot.callback_query_handler(func=lambda call: True)
-def answer(call):
-    # Лог активности
-    add_log(call)
-
-    bot.answer_callback_query(call.id, text="")
-
-    if call.data == 'versions':
-        bot.register_next_step_handler(
-            bot.send_message(call.message.chat.id, f"Введите ID редакции СЭМД:", reply_markup=markup_back),
-            get_versions
-            )
-
-    elif call.data == 'back':
-        bot.clear_step_handler_by_chat_id(chat_id=call.message.chat.id)
-        bot.send_message(call.message.chat.id, start_txt, parse_mode='Markdown', reply_markup=markup_inline)
-
-@bot.message_handler(commands=['stat'])
-def stat(message):
-    # Лог активности
-    add_log(message)
-    
-    bot.send_message(message.from_user.id, get_statistics(), parse_mode='html',
-                     disable_web_page_preview=True)
-        
-@bot.message_handler(content_types=['text'])
-def auto_answer(message):
-    start(message)
-    
-# Запускаем бота
 if __name__ == '__main__':
     try:
         logger.info("=" * 50)
-        logger.info("Запуск SEMD Bot v2.0 (Миграция на модульную архитектуру)")
+        logger.info("Запуск SEMD Bot v2.0 (Полностью модульная архитектура)")
         logger.info("=" * 50)
 
-        # Загружаем плагины
+        # Загружаем плагины в правильном порядке
         logger.info("Загрузка плагинов...")
-        core.load_plugin('plugins.nsi_update_checker')
-        logger.info("✓ NSI Update Checker загружен")
+
+        # 1. Root Menu - центральный маршрутизатор (ВСЕГДА ПЕРВЫЙ!)
+        if core.load_plugin('plugins.root_menu'):
+            logger.info("✓ Root Menu загружен")
+        else:
+            logger.error("✗ Ошибка загрузки Root Menu!")
+            raise RuntimeError("Root Menu plugin failed to load")
+
+        # 2. Публичные плагины (доступны всем пользователям)
+        if core.load_plugin('plugins.semd_checker'):
+            logger.info("✓ SEMD Checker загружен")
+        else:
+            logger.error("✗ Ошибка загрузки SEMD Checker")
+
+        if core.load_plugin('plugins.nsi_update_checker'):
+            logger.info("✓ NSI Update Checker загружен")
+        else:
+            logger.error("✗ Ошибка загрузки NSI Update Checker")
+
+        # 3. Админские плагины
+        if core.load_plugin('plugins.statistics'):
+            logger.info("✓ Statistics загружен")
+        else:
+            logger.error("✗ Ошибка загрузки Statistics")
+
+        if core.load_plugin('plugins.admin_logs'):
+            logger.info("✓ Admin Logs загружен")
+        else:
+            logger.error("✗ Ошибка загрузки Admin Logs")
+
+        if core.load_plugin('plugins.plugin_manager'):
+            logger.info("✓ Plugin Manager загружен")
+        else:
+            logger.error("✗ Ошибка загрузки Plugin Manager")
 
         logger.info("Все плагины загружены успешно!")
         logger.info("=" * 50)

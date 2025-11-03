@@ -2,10 +2,11 @@ import requests
 import dateutil.parser as parser
 from datetime import datetime
 from typing import Tuple
-from handlers.fnsi import fnsi_version
-from handlers.sql import add_nsi_passport
+from plugins.semd_checker.semd_logic import SEMDVersionFetcher
+from services.database_service import add_nsi_passport
 
 from config import get_config
+
 cfg = get_config()
 
 # Настройка логирования
@@ -125,7 +126,7 @@ def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, dic
     """
     try:
         # Получаем информацию о текущей версии из базы
-        fnsi = fnsi_version(fnsi_oid)
+        fnsi = SEMDVersionFetcher(fnsi_oid)
 
         # Проверяем, что объект fnsi не None
         if fnsi is None:
