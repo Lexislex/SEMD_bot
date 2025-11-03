@@ -123,6 +123,9 @@ class SEMDHandlers:
     def handle_semd_menu(self, call: CallbackQuery):
         """Handle menu button click for SEMD Checker plugin"""
         try:
+            # Remove keyboard from previous message
+            cleanup_previous_message(self.bot, call.message.chat.id)
+
             menu_text = (
                 "🔍 <b>Поиск версий СЭМД</b>\n\n"
                 "<b>Функция:</b> Поиск информации о версиях структурированных электронных медицинских документов (СЭМД)\n\n"

@@ -55,10 +55,6 @@ class Plugin(BasePlugin):
             {
                 'params': {'commands': ['start']},
                 'handler': self.handlers.handle_start
-            },
-            {
-                'params': {'commands': ['menu']},
-                'handler': self.handlers.handle_menu
             }
         ]
 

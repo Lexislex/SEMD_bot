@@ -34,23 +34,6 @@ class RootMenuHandlers:
         # Track this message for later cleanup
         get_message_manager().update_message(message.chat.id, sent_msg.message_id, user_id)
 
-    def handle_menu(self, message):
-        """Handle /menu command"""
-        user_id = message.from_user.id
-        menu_text = "📋 Главное меню:\n\nВыбери функцию:"
-
-        # Remove keyboard from previous message
-        cleanup_previous_message(self.bot, message.chat.id)
-
-        available_plugins = self.plugin_manager.get_available_plugins(user_id)
-        # Filter out RootMenu plugin from the menu
-        available_plugins = [p for p in available_plugins if p.get_name() != "RootMenu"]
-        keyboard = get_main_menu_keyboard(available_plugins)
-
-        sent_msg = self.bot.send_message(message.chat.id, menu_text, reply_markup=keyboard)
-        # Track this message for later cleanup
-        get_message_manager().update_message(message.chat.id, sent_msg.message_id, user_id)
-
     def handle_back_button(self, call):
         """Handle back to menu button"""
         user_id = call.from_user.id
@@ -61,12 +44,15 @@ class RootMenuHandlers:
         available_plugins = [p for p in available_plugins if p.get_name() != "RootMenu"]
         keyboard = get_main_menu_keyboard(available_plugins)
 
-        self.bot.edit_message_text(
+        # Remove keyboard from previous message
+        cleanup_previous_message(self.bot, call.message.chat.id)
+
+        # Send menu as a new message instead of editing
+        sent_msg = self.bot.send_message(
             chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
             text=menu_text,
             reply_markup=keyboard
         )
         # Update tracked message to current one
-        get_message_manager().update_message(call.message.chat.id, call.message.message_id, user_id)
+        get_message_manager().update_message(call.message.chat.id, sent_msg.message_id, user_id)
         self.bot.answer_callback_query(call.id)

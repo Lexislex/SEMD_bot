@@ -79,6 +79,11 @@ class StatisticsHandlers:
             df.index.name = None
             df = df.fillna(0)
 
+            # Add totals row for each week
+            totals_row = df.sum(axis=0)
+            totals_row.name = 'Итого'
+            df = pd.concat([df, totals_row.to_frame().T])
+
             # Truncate activity names to 12 characters with ellipsis
             df.index = df.index.map(lambda x: x[:12] + '...' if len(x) > 12 else x)
 
@@ -165,6 +170,11 @@ class StatisticsHandlers:
             df = df.pivot_table(index=['activity'], columns='week', values='user_id', aggfunc='count')
             df.index.name = None
             df = df.fillna(0)
+
+            # Add totals row for each week
+            totals_row = df.sum(axis=0)
+            totals_row.name = 'Итого'
+            df = pd.concat([df, totals_row.to_frame().T])
 
             # Truncate activity names to 12 characters with ellipsis
             df.index = df.index.map(lambda x: x[:12] + '...' if len(x) > 12 else x)
