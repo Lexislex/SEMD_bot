@@ -5,6 +5,7 @@ import pandas as pd
 from tabulate import tabulate
 from telebot.types import Message, CallbackQuery
 from utils.date_utils import next_weekday
+from utils.message_manager import get_message_manager, cleanup_previous_message
 from services.database_service import get_activity, add_log
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,9 @@ class StatisticsHandlers:
             # Log the activity
             add_log(message)
 
+            # Remove keyboard from previous message
+            cleanup_previous_message(self.bot, message.chat.id)
+
             # Get statistics for last 3 weeks
             week = -3
             start_date = next_weekday(datetime.datetime.now().date(), 0, week)
@@ -41,10 +45,11 @@ class StatisticsHandlers:
             activity_data = get_activity(start_date, stop_date)
 
             if not activity_data:
-                self.bot.send_message(
+                sent_msg = self.bot.send_message(
                     message.chat.id,
                     "📊 Нет данных активности за указанный период."
                 )
+                get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
                 return
 
             # Process data
@@ -55,10 +60,11 @@ class StatisticsHandlers:
             df = df[~df['user_id'].isin(self.config.accounts.admin_ids)]
 
             if df.empty:
-                self.bot.send_message(
+                sent_msg = self.bot.send_message(
                     message.chat.id,
                     "📊 Нет данных активности от пользователей за указанный период."
                 )
+                get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
                 return
 
             # Create pivot table
@@ -73,14 +79,16 @@ class StatisticsHandlers:
                 f"<pre>{tabulate(df, headers='keys', tablefmt='psql')}</pre>"
             )
 
-            self.bot.send_message(message.chat.id, stats_text, parse_mode='html')
+            sent_msg = self.bot.send_message(message.chat.id, stats_text, parse_mode='html')
+            get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
         except Exception as e:
             self.logger.error(f"Error in statistics handler: {e}")
-            self.bot.send_message(
+            sent_msg = self.bot.send_message(
                 message.chat.id,
                 f"❌ Ошибка при получении статистики: {e}"
             )
+            get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
     def handle_stat_menu(self, call: CallbackQuery):
         """Handle menu button click for Statistics plugin"""
@@ -113,6 +121,8 @@ class StatisticsHandlers:
                 parse_mode='html',
                 reply_markup=markup
             )
+            # Update tracked message to current one
+            get_message_manager().update_message(call.message.chat.id, call.message.message_id, call.from_user.id)
             self.bot.answer_callback_query(call.id)
         except Exception as e:
             self.logger.error(f"Error in statistics menu handler: {e}")

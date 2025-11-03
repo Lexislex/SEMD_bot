@@ -2,6 +2,7 @@ import logging
 from telebot import apihelper
 from telebot.types import CallbackQuery
 from services.fnsi_client import nsi_passport_updater
+from utils.message_manager import get_message_manager
 from .data import NSI_LIST, NSI_DICTIONARIES
 from .formatters import (
     ImportantUpdateFormatter,
@@ -134,6 +135,8 @@ class NSIUpdHandlers:
                 parse_mode='html',
                 reply_markup=markup
             )
+            # Update tracked message to current one
+            get_message_manager().update_message(call.message.chat.id, call.message.message_id, call.from_user.id)
             self.bot.answer_callback_query(call.id)
         except Exception as e:
             self.logger.error(f"Ошибка при обработке меню NSI Update Checker: {e}")

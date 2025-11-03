@@ -3,6 +3,7 @@ import logging
 from telebot import types
 from telebot.types import Message, CallbackQuery
 from services.database_service import add_log
+from utils.message_manager import get_message_manager, cleanup_previous_message
 from .semd_logic import SEMD1520
 from .keyboards import get_back_button
 
@@ -26,6 +27,9 @@ class SEMDHandlers:
             # Log the activity
             add_log(message)
 
+            # Remove keyboard from previous message
+            cleanup_previous_message(self.bot, message.chat.id)
+
             search_text = message.text.strip()
 
             # Try to parse as OID (numeric)
@@ -34,10 +38,12 @@ class SEMDHandlers:
                 name, versions, doc_type, link_1520, link_1522, dict_version = self.semd.get_semd_versions(semd_oid)
 
                 if name is None:
-                    self.bot.send_message(
+                    sent_msg = self.bot.send_message(
                         message.chat.id,
                         f"❌ СЭМД с OID {semd_oid} не найдена.\n\nПопробуйте еще раз или введите корректный OID."
                     )
+                    # Track this message for later cleanup
+                    get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
                     return
 
                 # Format response
@@ -51,24 +57,30 @@ class SEMDHandlers:
                 )
 
                 markup = get_back_button()
-                self.bot.send_message(message.chat.id, response, parse_mode='html', reply_markup=markup)
+                sent_msg = self.bot.send_message(message.chat.id, response, parse_mode='html', reply_markup=markup)
+                # Track this message for later cleanup
+                get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
             except ValueError:
                 # Not a number - inform user
-                self.bot.send_message(
+                sent_msg = self.bot.send_message(
                     message.chat.id,
                     "⚠️ Пожалуйста введите корректный SEMD OID (число).\n\n"
                     "Примеры:\n"
                     "• 123 - для поиска по номеру\n"
                     "• 456 - для поиска другого документа"
                 )
+                # Track this message for later cleanup
+                get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
         except Exception as e:
             self.logger.error(f"Error in SEMD search: {e}")
-            self.bot.send_message(
+            sent_msg = self.bot.send_message(
                 message.chat.id,
                 "❌ Ошибка при поиске СЭМД. Пожалуйста попробуйте еще раз."
             )
+            # Track this message for later cleanup
+            get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
     def handle_semd_about(self, message: Message):
         """Handle /about command"""
@@ -114,6 +126,8 @@ class SEMDHandlers:
                 parse_mode='html',
                 reply_markup=markup
             )
+            # Update tracked message to current one
+            get_message_manager().update_message(call.message.chat.id, call.message.message_id, call.from_user.id)
             self.bot.answer_callback_query(call.id)
         except Exception as e:
             self.logger.error(f"Error in SEMD menu handler: {e}")

@@ -2,6 +2,7 @@
 import logging
 from telebot.types import Message, CallbackQuery
 from services.database_service import get_activity
+from utils.message_manager import get_message_manager, cleanup_previous_message
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,9 @@ class AdminLogsHandlers:
                 )
                 return
 
+            # Log the activity
+            cleanup_previous_message(self.bot, message.chat.id)
+
             # Get last 7 days of logs
             stop_date = datetime.now().date()
             start_date = stop_date - timedelta(days=7)
@@ -34,10 +38,11 @@ class AdminLogsHandlers:
             activity_data = get_activity(start_date, stop_date)
 
             if not activity_data:
-                self.bot.send_message(
+                sent_msg = self.bot.send_message(
                     message.chat.id,
                     "📋 Нет логов активности за последние 7 дней."
                 )
+                get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
                 return
 
             # Format logs
@@ -51,17 +56,22 @@ class AdminLogsHandlers:
             # Send in chunks if too long
             if len(logs_text) > 4096:
                 parts = [logs_text[i:i+4096] for i in range(0, len(logs_text), 4096)]
+                last_msg = None
                 for part in parts:
-                    self.bot.send_message(message.chat.id, part, parse_mode='html')
+                    last_msg = self.bot.send_message(message.chat.id, part, parse_mode='html')
+                if last_msg:
+                    get_message_manager().update_message(message.chat.id, last_msg.message_id, message.from_user.id)
             else:
-                self.bot.send_message(message.chat.id, logs_text, parse_mode='html')
+                sent_msg = self.bot.send_message(message.chat.id, logs_text, parse_mode='html')
+                get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
         except Exception as e:
             self.logger.error(f"Error in logs handler: {e}")
-            self.bot.send_message(
+            sent_msg = self.bot.send_message(
                 message.chat.id,
                 f"❌ Ошибка при получении логов: {e}"
             )
+            get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
     def handle_logs_menu(self, call: CallbackQuery):
         """Handle menu button click for Admin Logs plugin"""
@@ -94,6 +104,8 @@ class AdminLogsHandlers:
                 parse_mode='html',
                 reply_markup=markup
             )
+            # Update tracked message to current one
+            get_message_manager().update_message(call.message.chat.id, call.message.message_id, call.from_user.id)
             self.bot.answer_callback_query(call.id)
         except Exception as e:
             self.logger.error(f"Error in logs menu handler: {e}")

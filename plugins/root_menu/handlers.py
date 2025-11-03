@@ -1,6 +1,7 @@
 """Handlers for Root Menu plugin"""
 import logging
 from telebot import types
+from utils.message_manager import get_message_manager, cleanup_previous_message
 from .keyboards import get_main_menu_keyboard, get_back_button
 
 logger = logging.getLogger(__name__)
@@ -29,19 +30,26 @@ class RootMenuHandlers:
         available_plugins = [p for p in available_plugins if p.get_name() != "RootMenu"]
         keyboard = get_main_menu_keyboard(available_plugins)
 
-        self.bot.send_message(message.chat.id, welcome_text, reply_markup=keyboard)
+        sent_msg = self.bot.send_message(message.chat.id, welcome_text, reply_markup=keyboard)
+        # Track this message for later cleanup
+        get_message_manager().update_message(message.chat.id, sent_msg.message_id, user_id)
 
     def handle_menu(self, message):
         """Handle /menu command"""
         user_id = message.from_user.id
         menu_text = "📋 Главное меню:\n\nВыбери функцию:"
 
+        # Remove keyboard from previous message
+        cleanup_previous_message(self.bot, message.chat.id)
+
         available_plugins = self.plugin_manager.get_available_plugins(user_id)
         # Filter out RootMenu plugin from the menu
         available_plugins = [p for p in available_plugins if p.get_name() != "RootMenu"]
         keyboard = get_main_menu_keyboard(available_plugins)
 
-        self.bot.send_message(message.chat.id, menu_text, reply_markup=keyboard)
+        sent_msg = self.bot.send_message(message.chat.id, menu_text, reply_markup=keyboard)
+        # Track this message for later cleanup
+        get_message_manager().update_message(message.chat.id, sent_msg.message_id, user_id)
 
     def handle_back_button(self, call):
         """Handle back to menu button"""
@@ -59,4 +67,6 @@ class RootMenuHandlers:
             text=menu_text,
             reply_markup=keyboard
         )
+        # Update tracked message to current one
+        get_message_manager().update_message(call.message.chat.id, call.message.message_id, user_id)
         self.bot.answer_callback_query(call.id)

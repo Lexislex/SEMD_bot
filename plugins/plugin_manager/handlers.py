@@ -1,6 +1,7 @@
 """Plugin Manager plugin handlers"""
 import logging
 from telebot.types import Message, CallbackQuery
+from utils.message_manager import get_message_manager, cleanup_previous_message
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +21,23 @@ class PluginManagerHandlers:
             # Check admin access
             if message.from_user.id not in self.config.accounts.admin_ids:
                 self.bot.send_message(
-                    message.chat_id,
+                    message.chat.id,
                     "❌ Доступ запрещен. Только для администраторов."
                 )
                 return
+
+            # Remove keyboard from previous message
+            cleanup_previous_message(self.bot, message.chat.id)
 
             # Get all plugins
             plugins = self.plugin_manager.plugins
 
             if not plugins:
-                self.bot.send_message(
-                    message.chat_id,
+                sent_msg = self.bot.send_message(
+                    message.chat.id,
                     "📦 Нет загруженных плагинов."
                 )
+                get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
                 return
 
             # Format plugin list
@@ -52,14 +57,16 @@ class PluginManagerHandlers:
                     f"   Описание: {plugin.description}\n\n"
                 )
 
-            self.bot.send_message(message.chat_id, plugins_text, parse_mode='html')
+            sent_msg = self.bot.send_message(message.chat.id, plugins_text, parse_mode='html')
+            get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
         except Exception as e:
             self.logger.error(f"Error in plugins handler: {e}")
-            self.bot.send_message(
-                message.chat_id,
+            sent_msg = self.bot.send_message(
+                message.chat.id,
                 f"❌ Ошибка при получении списка плагинов: {e}"
             )
+            get_message_manager().update_message(message.chat.id, sent_msg.message_id, message.from_user.id)
 
     def handle_plugin_manager_menu(self, call: CallbackQuery):
         """Handle menu button click for Plugin Manager plugin"""
@@ -92,6 +99,8 @@ class PluginManagerHandlers:
                 parse_mode='html',
                 reply_markup=markup
             )
+            # Update tracked message to current one
+            get_message_manager().update_message(call.message.chat.id, call.message.message_id, call.from_user.id)
             self.bot.answer_callback_query(call.id)
         except Exception as e:
             self.logger.error(f"Error in plugin manager menu handler: {e}")
