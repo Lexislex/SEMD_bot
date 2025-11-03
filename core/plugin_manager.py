@@ -32,10 +32,17 @@ class PluginManager:
             
     def _register_handlers(self, plugin: BasePlugin):
         """Регистрирует обработчики плагина в боте"""
-        for command in plugin.get_commands():
+        commands = plugin.get_commands()
+        callbacks = plugin.get_callbacks()
+
+        # Skip if no handlers (e.g., plugin not fully initialized yet)
+        if not commands and not callbacks:
+            return
+
+        for command in commands:
             self.bot.message_handler(**command['params'])(command['handler'])
-            
-        for callback in plugin.get_callbacks():
+
+        for callback in callbacks:
             self.bot.callback_query_handler(**callback['params'])(callback['handler'])
             
     def get_scheduled_tasks(self) -> List[Dict[str, Any]]:

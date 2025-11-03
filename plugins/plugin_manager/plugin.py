@@ -36,19 +36,24 @@ class Plugin(BasePlugin):
     def initialize(self) -> bool:
         """Initialize the plugin"""
         try:
-            if self.plugin_manager is None:
-                self.logger.error("Plugin manager not set for PluginManager")
-                return False
-
-            self.handlers = PluginManagerHandlers(self.bot, self.config, self.plugin_manager)
+            # Handlers will be created when plugin_manager is set
             self.logger.info(f"Plugin {self.get_name()} initialized successfully")
             return True
         except Exception as e:
             self.logger.error(f"Error initializing {self.get_name()}: {e}")
             return False
 
+    def set_plugin_manager(self, plugin_manager):
+        """Set reference to plugin manager"""
+        self.plugin_manager = plugin_manager
+        # Create handlers now that we have plugin_manager
+        if self.handlers is None:
+            self.handlers = PluginManagerHandlers(self.bot, self.config, self.plugin_manager)
+
     def get_commands(self) -> List[Dict[str, Any]]:
         """Register commands"""
+        if self.handlers is None:
+            return []
         return [
             {
                 'params': {'commands': ['plugins']},

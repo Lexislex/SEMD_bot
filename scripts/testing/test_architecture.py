@@ -222,11 +222,12 @@ def test_legacy_handlers_removed():
         except ImportError:
             logger.info("✅ Legacy handlers модуль удален")
 
-        # Проверяем что нет импортов из handlers
+        # Проверяем что нет импортов из handlers (исключаем тесты и scripts)
         import subprocess
 
         result = subprocess.run(
-            ['grep', '-r', 'from handlers', '/Users/alexeyalepko/dev/SEMD_bot/', '--include=*.py'],
+            ['grep', '-r', 'from handlers', '/Users/alexeyalepko/dev/SEMD_bot/', '--include=*.py',
+             '--exclude-dir=scripts'],
             capture_output=True,
             text=True
         )

@@ -33,19 +33,24 @@ class Plugin(BasePlugin):
     def initialize(self) -> bool:
         """Initialize the plugin"""
         try:
-            if self.plugin_manager is None:
-                self.logger.error("Plugin manager not set for RootMenu")
-                return False
-
-            self.handlers = RootMenuHandlers(self.bot, self.config, self.plugin_manager)
+            # Handlers will be created when plugin_manager is set
             self.logger.info(f"Plugin {self.get_name()} initialized successfully")
             return True
         except Exception as e:
             self.logger.error(f"Error initializing RootMenu plugin: {e}")
             return False
 
+    def set_plugin_manager(self, plugin_manager):
+        """Set reference to plugin manager for accessing other plugins"""
+        self.plugin_manager = plugin_manager
+        # Create handlers now that we have plugin_manager
+        if self.handlers is None:
+            self.handlers = RootMenuHandlers(self.bot, self.config, self.plugin_manager)
+
     def get_commands(self):
         """Register commands"""
+        if self.handlers is None:
+            return []
         return [
             {
                 'params': {'commands': ['start']},
@@ -59,6 +64,8 @@ class Plugin(BasePlugin):
 
     def get_callbacks(self):
         """Register callback handlers"""
+        if self.handlers is None:
+            return []
         return [
             {
                 'params': {'func': lambda call: call.data == "back_to_menu"},

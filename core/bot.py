@@ -19,10 +19,14 @@ class SEMDBotCore:
                 root_menu_plugin = self.plugin_manager.plugins.get("RootMenu")
                 if root_menu_plugin:
                     root_menu_plugin.set_plugin_manager(self.plugin_manager)
+                    # Re-register handlers after plugin_manager is set
+                    self.plugin_manager._register_handlers(root_menu_plugin)
             elif "plugin_manager" in plugin_path:
                 plugin_mgr_plugin = self.plugin_manager.plugins.get("PluginManager")
                 if plugin_mgr_plugin:
                     plugin_mgr_plugin.set_plugin_manager(self.plugin_manager)
+                    # Re-register handlers after plugin_manager is set
+                    self.plugin_manager._register_handlers(plugin_mgr_plugin)
 
         return result
         
