@@ -34,9 +34,11 @@ class SEMDHandlers:
                 name, versions, doc_type, link_1520, link_1522, dict_version = self.semd.get_semd_versions(semd_oid)
 
                 if name is None:
+                    markup = get_back_button()
                     self.bot.send_message(
                         message.chat.id,
-                        f"❌ СЭМД с OID {semd_oid} не найдена.\n\nПопробуйте еще раз или введите корректный OID."
+                        f"❌ СЭМД с OID {semd_oid} не найдена.\n\nПопробуйте еще раз или введите корректный OID.",
+                        reply_markup=markup
                     )
                     return
 
@@ -55,19 +57,23 @@ class SEMDHandlers:
 
             except ValueError:
                 # Not a number - inform user
+                markup = get_back_button()
                 self.bot.send_message(
                     message.chat.id,
                     "⚠️ Пожалуйста введите корректный SEMD OID (число).\n\n"
                     "Примеры:\n"
                     "• 123 - для поиска по номеру\n"
-                    "• 456 - для поиска другого документа"
+                    "• 456 - для поиска другого документа",
+                    reply_markup=markup
                 )
 
         except Exception as e:
             self.logger.error(f"Error in SEMD search: {e}")
+            markup = get_back_button()
             self.bot.send_message(
                 message.chat.id,
-                "❌ Ошибка при поиске СЭМД. Пожалуйста попробуйте еще раз."
+                "❌ Ошибка при поиске СЭМД. Пожалуйста попробуйте еще раз.",
+                reply_markup=markup
             )
 
     def handle_semd_about(self, message: Message):
@@ -88,9 +94,11 @@ class SEMDHandlers:
 
         except Exception as e:
             self.logger.error(f"Error in about handler: {e}")
+            markup = get_back_button()
             self.bot.send_message(
                 message.chat.id,
-                "❌ Ошибка при получении информации"
+                "❌ Ошибка при получении информации",
+                reply_markup=markup
             )
 
     def handle_semd_menu(self, call: CallbackQuery):
