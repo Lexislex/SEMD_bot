@@ -79,6 +79,9 @@ class StatisticsHandlers:
             df.index.name = None
             df = df.fillna(0)
 
+            # Truncate activity names to 15 characters with ellipsis
+            df.index = df.index.map(lambda x: x[:15] + '...' if len(x) > 15 else x)
+
             # Format and send
             stats_text = (
                 "📊 <b>Статистика активности по неделям:</b>\n\n"
@@ -162,6 +165,9 @@ class StatisticsHandlers:
             df = df.pivot_table(index=['activity'], columns='week', values='user_id', aggfunc='count')
             df.index.name = None
             df = df.fillna(0)
+
+            # Truncate activity names to 15 characters with ellipsis
+            df.index = df.index.map(lambda x: x[:15] + '...' if len(x) > 15 else x)
 
             # Format and send
             stats_text = (
