@@ -31,7 +31,7 @@ class SEMDHandlers:
 
                 if name is None:
                     self.bot.send_message(
-                        message.chat_id,
+                        message.chat.id,
                         f"❌ СЭМД с OID {semd_oid} не найдена.\n\nПопробуйте еще раз или введите корректный OID."
                     )
                     return
@@ -47,12 +47,12 @@ class SEMDHandlers:
                 )
 
                 markup = get_back_button()
-                self.bot.send_message(message.chat_id, response, parse_mode='html', reply_markup=markup)
+                self.bot.send_message(message.chat.id, response, parse_mode='html', reply_markup=markup)
 
             except ValueError:
                 # Not a number - inform user
                 self.bot.send_message(
-                    message.chat_id,
+                    message.chat.id,
                     "⚠️ Пожалуйста введите корректный SEMD OID (число).\n\n"
                     "Примеры:\n"
                     "• 123 - для поиска по номеру\n"
@@ -62,7 +62,7 @@ class SEMDHandlers:
         except Exception as e:
             self.logger.error(f"Error in SEMD search: {e}")
             self.bot.send_message(
-                message.chat_id,
+                message.chat.id,
                 "❌ Ошибка при поиске СЭМД. Пожалуйста попробуйте еще раз."
             )
 
@@ -80,11 +80,11 @@ class SEMDHandlers:
             )
 
             markup = get_back_button()
-            self.bot.send_message(message.chat_id, about_text, parse_mode='html', reply_markup=markup)
+            self.bot.send_message(message.chat.id, about_text, parse_mode='html', reply_markup=markup)
 
         except Exception as e:
             self.logger.error(f"Error in about handler: {e}")
             self.bot.send_message(
-                message.chat_id,
+                message.chat.id,
                 "❌ Ошибка при получении информации"
             )

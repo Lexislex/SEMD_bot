@@ -21,7 +21,7 @@ class AdminLogsHandlers:
             # Check admin access
             if message.from_user.id not in self.config.accounts.admin_ids:
                 self.bot.send_message(
-                    message.chat_id,
+                    message.chat.id,
                     "❌ Доступ запрещен. Только для администраторов."
                 )
                 return
@@ -35,7 +35,7 @@ class AdminLogsHandlers:
 
             if not activity_data:
                 self.bot.send_message(
-                    message.chat_id,
+                    message.chat.id,
                     "📋 Нет логов активности за последние 7 дней."
                 )
                 return
@@ -52,13 +52,13 @@ class AdminLogsHandlers:
             if len(logs_text) > 4096:
                 parts = [logs_text[i:i+4096] for i in range(0, len(logs_text), 4096)]
                 for part in parts:
-                    self.bot.send_message(message.chat_id, part, parse_mode='html')
+                    self.bot.send_message(message.chat.id, part, parse_mode='html')
             else:
-                self.bot.send_message(message.chat_id, logs_text, parse_mode='html')
+                self.bot.send_message(message.chat.id, logs_text, parse_mode='html')
 
         except Exception as e:
             self.logger.error(f"Error in logs handler: {e}")
             self.bot.send_message(
-                message.chat_id,
+                message.chat.id,
                 f"❌ Ошибка при получении логов: {e}"
             )

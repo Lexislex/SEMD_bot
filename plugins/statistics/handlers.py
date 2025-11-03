@@ -24,7 +24,7 @@ class StatisticsHandlers:
             # Check admin access
             if message.from_user.id not in self.config.accounts.admin_ids:
                 self.bot.send_message(
-                    message.chat_id,
+                    message.chat.id,
                     "❌ Доступ запрещен. Только для администраторов."
                 )
                 return
@@ -42,7 +42,7 @@ class StatisticsHandlers:
 
             if not activity_data:
                 self.bot.send_message(
-                    message.chat_id,
+                    message.chat.id,
                     "📊 Нет данных активности за указанный период."
                 )
                 return
@@ -56,7 +56,7 @@ class StatisticsHandlers:
 
             if df.empty:
                 self.bot.send_message(
-                    message.chat_id,
+                    message.chat.id,
                     "📊 Нет данных активности от пользователей за указанный период."
                 )
                 return
@@ -73,11 +73,11 @@ class StatisticsHandlers:
                 f"<pre>{tabulate(df, headers='keys', tablefmt='psql')}</pre>"
             )
 
-            self.bot.send_message(message.chat_id, stats_text, parse_mode='html')
+            self.bot.send_message(message.chat.id, stats_text, parse_mode='html')
 
         except Exception as e:
             self.logger.error(f"Error in statistics handler: {e}")
             self.bot.send_message(
-                message.chat_id,
+                message.chat.id,
                 f"❌ Ошибка при получении статистики: {e}"
             )

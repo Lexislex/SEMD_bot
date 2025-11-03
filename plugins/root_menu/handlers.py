@@ -27,7 +27,7 @@ class RootMenuHandlers:
         available_plugins = self.plugin_manager.get_available_plugins(user_id)
         keyboard = get_main_menu_keyboard(available_plugins)
 
-        self.bot.send_message(message.chat_id, welcome_text, reply_markup=keyboard)
+        self.bot.send_message(message.chat.id, welcome_text, reply_markup=keyboard)
 
     def handle_menu(self, message):
         """Handle /menu command"""
@@ -37,7 +37,7 @@ class RootMenuHandlers:
         available_plugins = self.plugin_manager.get_available_plugins(user_id)
         keyboard = get_main_menu_keyboard(available_plugins)
 
-        self.bot.send_message(message.chat_id, menu_text, reply_markup=keyboard)
+        self.bot.send_message(message.chat.id, menu_text, reply_markup=keyboard)
 
     def handle_back_button(self, call):
         """Handle back to menu button"""
@@ -48,7 +48,7 @@ class RootMenuHandlers:
         keyboard = get_main_menu_keyboard(available_plugins)
 
         self.bot.edit_message_text(
-            chat_id=call.message.chat_id,
+            chat_id=call.message.chat.id,
             message_id=call.message.message_id,
             text=menu_text,
             reply_markup=keyboard
