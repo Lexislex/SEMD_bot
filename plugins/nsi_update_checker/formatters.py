@@ -7,6 +7,7 @@
 
 from abc import ABC, abstractmethod
 import logging
+import re
 import dateutil.parser as parser
 from typing import Optional
 from datetime import datetime
@@ -67,9 +68,10 @@ class UpdateMessageFormatter(ABC):
 
         try:
             # Название справочника (очищаем от специальных символов)
-            name = fnsi_info.get('shortName', '').replace(' ', '_').replace('/', '_')[:20]
+            name = fnsi_info.get('shortName', '')[:20]
             if name:
-                tags.append(f"#{name}")
+                clean_name = re.sub(r'[^\w]', '_', name, flags=re.UNICODE)
+                tags.append(f"#{clean_name}")
 
             # Месяц и год
             try:
