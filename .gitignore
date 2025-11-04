@@ -137,6 +137,9 @@ venv.bak/
 # Cursor
 .cursor/
 
+# Claude Code
+.claude/
+
 # Test folders
 /tests/
 

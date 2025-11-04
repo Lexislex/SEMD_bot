@@ -52,15 +52,16 @@ if __name__ == '__main__':
         else:
             logger.error("✗ Ошибка загрузки Statistics")
 
-        if core.load_plugin('plugins.admin_logs'):
-            logger.info("✓ Admin Logs загружен")
-        else:
-            logger.error("✗ Ошибка загрузки Admin Logs")
+        # WIP плагины (в разработке, отключены до завершения)
+        # if core.load_plugin('plugins.admin_logs'):
+        #     logger.info("✓ Admin Logs загружен")
+        # else:
+        #     logger.error("✗ Ошибка загрузки Admin Logs")
 
-        if core.load_plugin('plugins.plugin_manager'):
-            logger.info("✓ Plugin Manager загружен")
-        else:
-            logger.error("✗ Ошибка загрузки Plugin Manager")
+        # if core.load_plugin('plugins.plugin_manager'):
+        #     logger.info("✓ Plugin Manager загружен")
+        # else:
+        #     logger.error("✗ Ошибка загрузки Plugin Manager")
 
         logger.info("Все плагины загружены успешно!")
         logger.info("=" * 50)
