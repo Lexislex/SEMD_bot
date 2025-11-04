@@ -1,6 +1,7 @@
 import logging
 import logging.config
 from pathlib import Path
+from utils.log_sanitizer import setup_log_sanitizer
 
 def setup_logging(cfg) -> None:
     logs_dir: Path = cfg.paths.logs_dir
@@ -51,3 +52,6 @@ def setup_logging(cfg) -> None:
     }
 
     logging.config.dictConfig(config)
+
+    # Инициализируем санитайзер для очистки чувствительных данных
+    setup_log_sanitizer()

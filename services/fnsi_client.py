@@ -16,20 +16,20 @@ logger = logging.getLogger(__name__)
 def get_version(nsi: str, ver: str = 'latest') -> dict:
     """
     Получает информацию о справочниках с официального сайта ФНСИ.
-    
+
     Args:
         nsi: OID справочника
         ver: версия (по умолчанию 'latest')
-    
+
     Returns:
         dict: информация о справочнике
-    
+
     Raises:
         Exception: ошибки запроса или обработки ответа
     """
     if not cfg.apis.fnsi_api_key:
         raise ValueError("Отсутствует FNSI_API_KEY в конфигурации")
-    
+
     if not cfg.paths.mzrf_cert_path:
         raise ValueError("Отсутствует MZRF_CERT в конфигурации")
 
@@ -40,7 +40,7 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
     session = requests.Session()
     url = f'{cfg.apis.fnsi_api_url}/searchDictionary'\
           f'?userKey={cfg.apis.fnsi_api_key}&identifier={nsi}'
-    
+
     try:
         response = session.get(
             url, headers=headers,
@@ -48,17 +48,21 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
             timeout=30  # Таймаут 30 секунд
         )
         response.raise_for_status()  # Проверка HTTP статуса
-        
+        logger.debug(f"Успешно получен ответ от ФНСИ для справочника {nsi}")
+
     except requests.exceptions.Timeout:
         error_msg = f"Таймаут запроса к ФНСИ для справочника {nsi}"
+        logger.debug(f"Timeout при запросе к ФНСИ: {nsi}")
         raise ConnectionError(error_msg)
-        
+
     except requests.exceptions.ConnectionError:
         error_msg = f"Ошибка соединения с ФНСИ для справочника {nsi}"
+        logger.debug(f"Connection error при запросе к ФНСИ: {nsi}")
         raise ConnectionError(error_msg)
-        
+
     except requests.exceptions.RequestException as e:
-        error_msg = f"Ошибка запроса к ФНСИ для {nsi}: {str(e)}"
+        error_msg = f"Ошибка запроса к ФНСИ для {nsi}: запрос не выполнен"
+        logger.debug(f"RequestException для справочника {nsi}")
         raise ConnectionError(error_msg)
     
     # Проверяем, что ответ не пустой
@@ -157,11 +161,16 @@ def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, dic
             return False, None
 
     except (ConnectionError, ValueError) as e:
-        logger.error(f"Ошибка при обновлении справочника {fnsi_oid}: {str(e)}")
+        logger.error(f"Ошибка при обновлении справочника {fnsi_oid}")
+        # Деталь ошибки логируется только в DEBUG
+        logger.debug(f"Детали ошибки для {fnsi_oid}: {str(e)}")
         return False, None
 
     except Exception as e:
-        logger.exception(f"Неожиданная ошибка при обновлении справочника {fnsi_oid}: {str(e)}")
+        logger.error(f"Неожиданная ошибка при обновлении справочника {fnsi_oid}")
+        # Полный стек вызовов логируется только в DEBUG режиме
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.exception(f"Детали исключения для {fnsi_oid}")
         return False, None
 
 if __name__ == '__main__':
