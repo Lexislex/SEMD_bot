@@ -46,6 +46,11 @@ if __name__ == '__main__':
         else:
             logger.error("✗ Ошибка загрузки NSI Update Checker")
 
+        if core.load_plugin('plugins.semd_reg_tracker'):
+            logger.info("✓ SEMD Reg Tracker загружен")
+        else:
+            logger.error("✗ Ошибка загрузки SEMD Reg Tracker")
+
         # 3. Админские плагины
         if core.load_plugin('plugins.statistics'):
             logger.info("✓ Statistics загружен")
