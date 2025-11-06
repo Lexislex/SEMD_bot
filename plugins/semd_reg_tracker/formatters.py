@@ -2,6 +2,7 @@ from datetime import date
 from typing import List, NamedTuple
 import logging
 import html
+import re
 
 
 class SEMDRegistrationFormatter:
@@ -109,8 +110,8 @@ class SEMDRegistrationFormatter:
         Returns:
             Отформатированная строка:
             📅 01.01.2025
-            • 119 Протокол консультации (CDA) Редакция 4
-            • 134 Предоперационный эпикриз (CDA) Редакция 1
+            • 119 Протокол консультации ред. 4
+            • 134 Предоперационный эпикриз ред. 1
         """
         try:
             lines = []
@@ -123,7 +124,28 @@ class SEMDRegistrationFormatter:
             for semd_number, name in date_group.semds:
                 # Экранируем HTML спецсимволы в наименовании
                 safe_name = html.escape(name)
-                lines.append(f"• {semd_number} {safe_name}")
+                # Убираем "(CDA)" и заменяем "Редакция" на "ред."
+                safe_name = safe_name.replace(' (CDA)', '')
+
+                # Проверяем есть ли "Редакция" в названии
+                has_revision = 'Редакция' in safe_name
+                revision_part = ''
+
+                if has_revision:
+                    # Извлекаем "Редакция X"
+                    match = re.search(r'Редакция\s+(\S+)', safe_name)
+                    if match:
+                        revision_part = f' ред. {match.group(1)}'
+                        # Удаляем "Редакция X" из названия
+                        safe_name = safe_name[:match.start()].strip()
+
+                # Сокращаем NAME: если больше 53 символов, берем первые 50 и добавляем "..."
+                if len(safe_name) > 53:
+                    safe_name = safe_name[:50] + '...' + revision_part
+                else:
+                    safe_name = safe_name + revision_part
+
+                lines.append(f"• <u>{semd_number}</u> {safe_name}")
 
             return "\n".join(lines)
         except Exception as e:

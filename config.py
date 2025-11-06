@@ -100,7 +100,7 @@ def get_config() -> Config:
 
     accounts_cfg = AccountsConfig(
         admin_ids = [int(id.strip()) for id in _read_env("ADMIN_ID").split(",")],
-        updates_mailing_list = _read_env("UPDS_MAILING_LIST").split(","),
+        updates_mailing_list = [int(id.strip()) for id in _read_env("UPDS_MAILING_LIST", "").split(",") if id.strip()],
     )
 
     paths_cfg = PathsConfig(

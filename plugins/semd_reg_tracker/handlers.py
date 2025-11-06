@@ -52,8 +52,7 @@ class SEMDRegistrationHandlers:
             # Фильтруем по START_DATE в указанном месяце и году
             monthly_data = df[
                 (df['START_DATE'].dt.month == month) &
-                (df['START_DATE'].dt.year == year) &
-                (df['FORMAT'] != 2)  # Исключаем FORMAT 2
+                (df['START_DATE'].dt.year == year)
             ].copy()
 
             return monthly_data
@@ -71,8 +70,7 @@ class SEMDRegistrationHandlers:
             # Фильтруем по END_DATE в указанном месяце и году
             monthly_data = df[
                 (df['END_DATE'].dt.month == month) &
-                (df['END_DATE'].dt.year == year) &
-                (df['FORMAT'] != 2)  # Исключаем FORMAT 2
+                (df['END_DATE'].dt.year == year)
             ].copy()
 
             return monthly_data
@@ -99,8 +97,7 @@ class SEMDRegistrationHandlers:
 
             quarterly_data = df[
                 (df['START_DATE'].dt.month.isin(months)) &
-                (df['START_DATE'].dt.year == year) &
-                (df['FORMAT'] != 2)  # Исключаем FORMAT 2
+                (df['START_DATE'].dt.year == year)
             ].copy()
 
             return quarterly_data
@@ -127,8 +124,7 @@ class SEMDRegistrationHandlers:
 
             quarterly_data = df[
                 (df['END_DATE'].dt.month.isin(months)) &
-                (df['END_DATE'].dt.year == year) &
-                (df['FORMAT'] != 2)  # Исключаем FORMAT 2
+                (df['END_DATE'].dt.year == year)
             ].copy()
 
             return quarterly_data
@@ -265,7 +261,7 @@ class SEMDRegistrationHandlers:
         """
         try:
             # Получаем список рассылки из конфига
-            mailing_list = self.config.get('UPDS_MAILING_LIST', [])
+            mailing_list = self.config.accounts.updates_mailing_list
 
             if not mailing_list:
                 self.logger.warning("Список рассылки UPDS_MAILING_LIST пуст")
