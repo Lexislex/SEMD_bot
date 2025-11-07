@@ -294,7 +294,7 @@ class SEMDRegistrationHandlers:
             self.logger.error(f"Ошибка при отправке в рассылку: {e}")
             return False
 
-    def handle_semd_reg_tracker_menu(self, call: CallbackQuery): #FIXME
+    def handle_semd_reg_tracker_menu(self, call: CallbackQuery):
         """
         Handle the SEMD Reg Tracker Update Checker menu button click.
         Shows information about where updates are posted.
@@ -305,7 +305,8 @@ class SEMDRegistrationHandlers:
         try:
             info_text = (
                 "📢 <b>Монитор регистрации СЭДМ в РЭМД</b>\n\n"
-                "Информация о начале и окончании регистрации постятся в канал:\n"
+                "Информация о начале и окончании регистрации СЭМД "
+                "публикуется первого числа каждого месяца в канале:\n"
                 "<b>«СЭМД инфо»</b>\n\n"
                 "🔗 Приглашение в канал:\n"
                 "https://t.me/+QGan41q3n6U1MzJi\n\n"

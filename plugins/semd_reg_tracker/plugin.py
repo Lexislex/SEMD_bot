@@ -10,7 +10,7 @@ class Plugin(BasePlugin):
 
     # Plugin metadata
     access_level = "all"
-    display_name = "🧾 Мониторинг регистрации в РЭМД"
+    display_name = "🧾 Регистрация в РЭМД"
     description = "Уведомления о начале/окончании регистрации СЭМД в РЭМД"
 
     def __init__(self, bot, config):
