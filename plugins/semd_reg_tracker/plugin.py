@@ -10,7 +10,7 @@ class Plugin(BasePlugin):
 
     # Plugin metadata
     access_level = "all"
-    display_name = "📊 Отслеживание СЭМД"
+    display_name = "🧾 Мониторинг регистрации в РЭМД"
     description = "Уведомления о начале/окончании регистрации СЭМД в РЭМД"
 
     def __init__(self, bot, config):
@@ -39,7 +39,12 @@ class Plugin(BasePlugin):
 
     def get_callbacks(self) -> List[Dict[str, Any]]:
         """Регистрирует callback-функции"""
-        return []
+        return [
+            {
+                'params': {'func': lambda call: call.data == "plugin_SEMDRegTracker"},
+                'handler': self.handlers.handle_semd_reg_tracker_menu
+            }
+        ]
 
     def get_scheduled_tasks(self) -> List[Dict[str, Any]]:
         """

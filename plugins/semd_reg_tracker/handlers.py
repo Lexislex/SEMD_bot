@@ -3,6 +3,8 @@ from datetime import datetime, date
 from typing import List, Tuple, Dict, Optional
 from collections import namedtuple
 import logging
+from telebot.types import CallbackQuery
+from utils.message_manager import get_message_manager, cleanup_previous_message
 
 # Структура для группировки по датам
 DateGroup = namedtuple('DateGroup', ['date', 'semds'])
@@ -25,7 +27,7 @@ class SEMDRegistrationHandlers:
         Возвращает True если успешно, False если ошибка
         """
         try:
-            from plugins.semd_checker.semd_logic import SEMD1520
+            from plugins.semd_checker.semd_logic import SEMD1520 #TODO сделать класс общим
 
             # Загружаем справочник SEMD1520 через существующий класс
             semd = SEMD1520()
@@ -291,3 +293,39 @@ class SEMDRegistrationHandlers:
         except Exception as e:
             self.logger.error(f"Ошибка при отправке в рассылку: {e}")
             return False
+
+    def handle_semd_reg_tracker_menu(self, call: CallbackQuery): #FIXME
+        """
+        Handle the SEMD Reg Tracker Update Checker menu button click.
+        Shows information about where updates are posted.
+
+        Args:
+            call: CallbackQuery object from Telegram
+        """
+        try:
+            info_text = (
+                "📢 <b>Монитор регистрации СЭДМ в РЭМД</b>\n\n"
+                "Информация о начале и окончании регистрации постятся в канал:\n"
+                "<b>«СЭМД инфо»</b>\n\n"
+                "🔗 Приглашение в канал:\n"
+                "https://t.me/+QGan41q3n6U1MzJi\n\n"
+                "Для получения уведомлений подпишитесь на канал!"
+            )
+
+            # Import here to avoid circular imports
+            from .keyboards import get_back_button
+            markup = get_back_button()
+
+            self.bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=info_text,
+                parse_mode='html',
+                reply_markup=markup
+            )
+            # Update tracked message to current one
+            get_message_manager().update_message(call.message.chat.id, call.message.message_id, call.from_user.id)
+            self.bot.answer_callback_query(call.id)
+        except Exception as e:
+            self.logger.error(f"Ошибка при обработке меню SEMD Reg Tracker: {e}")
+            self.bot.answer_callback_query(call.id, "❌ Ошибка при обработке запроса", show_alert=True)

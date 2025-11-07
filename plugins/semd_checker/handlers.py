@@ -3,7 +3,7 @@ import logging
 from telebot.types import Message, CallbackQuery
 from services.database_service import add_log
 from utils.message_manager import get_message_manager, cleanup_previous_message
-from .semd_logic import SEMD1520
+from .semd_logic import SEMD1520 #TODO сделать класс общим
 from .keyboards import get_back_button
 
 logger = logging.getLogger(__name__)

@@ -34,7 +34,7 @@ class SEMDRegistrationFormatter:
             month_name = month_names.get(month, str(month))
 
             lines = []
-            lines.append(f"📋 <b>СЭМД - Ежемесячная сводка за {month_name} {year}</b>")
+            lines.append(f"🧾 <b>Информация о регисрации в РЭМД, {month_name} {year}</b>")
             lines.append("")
 
             # Регистрации
@@ -79,7 +79,7 @@ class SEMDRegistrationFormatter:
             quarter_name = quarter_names.get(quarter, f"{quarter} квартал")
 
             lines = []
-            lines.append(f"📋 <b>СЭМД - Ежеквартальная сводка за {quarter_name} {year}</b>")
+            lines.append(f"🧾 <b>Информация о регисрации в РЭМД, {quarter_name} {year}</b>")
             lines.append("")
 
             # Регистрации
