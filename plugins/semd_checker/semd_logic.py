@@ -75,8 +75,11 @@ class SEMD1520:
         self.id = self.SEMD_OID
         self.version_fetcher = SEMDVersionFetcher(self.id)
         self.latest_version = self.version_fetcher.latest
+        self.df = None
+        self._load_data()
 
-        # Download and load the dictionary
+    def _load_data(self):
+        """Load SEMD 1520 data from CSV file"""
         try:
             download_file(self.id, self.latest_version)
             self.df = pd.read_csv(
@@ -93,9 +96,21 @@ class SEMD1520:
                 lambda x: 'запланирован вывод' if x and x > datetime.now()
                 else ('выведен' if x and x < datetime.now() else 'активно')
             )
+            logger.info(f"SEMD 1520 data loaded successfully (version {self.latest_version})")
         except Exception as e:
             logger.error(f"Error loading SEMD 1520 dictionary: {e}")
             self.df = None
+
+    def _check_and_reload_if_needed(self):
+        """Check if version has been updated in database and reload data if needed"""
+        try:
+            current_version = self.version_fetcher.get_version()
+            if current_version != self.latest_version:
+                logger.info(f"SEMD 1520 version updated: {self.latest_version} → {current_version}")
+                self.latest_version = current_version
+                self._load_data()
+        except Exception as e:
+            logger.warning(f"Error checking SEMD 1520 version update: {e}")
 
     def get_semd_versions(self, semd_oid):
         """
@@ -107,6 +122,9 @@ class SEMD1520:
         Returns:
             tuple: (document_name, versions_table, document_type, link_1520, link_1522, dictionary_version)
         """
+        # Check if version has been updated and reload if needed
+        self._check_and_reload_if_needed()
+
         if self.df is None:
             return None, "Ошибка: не удалось загрузить данные СЭМД", None, None, None, None
 
@@ -166,6 +184,9 @@ class SEMD1520:
         Returns:
             DataFrame with newest SEMD versions
         """
+        # Check if version has been updated and reload if needed
+        self._check_and_reload_if_needed()
+
         if self.df is None:
             return None
 
