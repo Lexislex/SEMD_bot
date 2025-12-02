@@ -61,11 +61,21 @@ class ExternalAPIsConfig:
     # добавляйте другие интеграции по мере роста
 
 @dataclass(frozen=True)
+class ProxyConfig:
+    enabled: bool
+    proxy_type: Optional[str]  # http, https, socks5
+    host: Optional[str]
+    port: Optional[int]
+    user: Optional[str]
+    password: Optional[str]
+
+@dataclass(frozen=True)
 class Config:
     app: AppConfig
     accounts: AccountsConfig
     paths: PathsConfig
     apis: ExternalAPIsConfig
+    proxy: ProxyConfig
 
 # Кеш конфигурации, чтобы не читать .env многократно
 _CONFIG: Optional[Config] = None
@@ -90,6 +100,15 @@ def get_config() -> Config:
     fnsi_api_url = _read_env("FNSI_API_URL")
     fnsi_files_url = _read_env("FNSI_FILES_URL")
     fnsi_api_key = _read_env("FNSI_API_KEY")
+
+    # Настройки прокси
+    proxy_enabled = _read_env("PROXY_ENABLED", "false").lower() in ("true", "1", "yes")
+    proxy_type = _read_env("PROXY_TYPE", "http")
+    proxy_host = _read_env("PROXY_HOST")
+    proxy_port_str = _read_env("PROXY_PORT")
+    proxy_port = int(proxy_port_str) if proxy_port_str else None
+    proxy_user = _read_env("PROXY_USER")
+    proxy_pass = _read_env("PROXY_PASS")
 
     app_cfg = AppConfig(
         bot_token=bot_token,
@@ -119,10 +138,20 @@ def get_config() -> Config:
         fnsi_api_key=fnsi_api_key,
     )
 
+    proxy_cfg = ProxyConfig(
+        enabled=proxy_enabled,
+        proxy_type=proxy_type,
+        host=proxy_host,
+        port=proxy_port,
+        user=proxy_user,
+        password=proxy_pass,
+    )
+
     _CONFIG = Config(
         app=app_cfg,
         accounts=accounts_cfg,
         paths=paths_cfg,
         apis=apis_cfg,
+        proxy=proxy_cfg,
     )
     return _CONFIG
