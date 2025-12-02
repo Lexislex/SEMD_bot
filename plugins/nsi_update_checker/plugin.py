@@ -44,13 +44,13 @@ class Plugin(ScheduledPlugin):
     def get_schedule_config(self) -> dict:
         """Конфигурация интервала проверки обновлений НСИ
         Development: каждую минуту
-        Production: каждые 15 минут
+        Production: каждые 33 минуты
         """
         # Конфигурация расписания
         if self.config.app.env == 'development':
             return {'interval': 1, 'unit': 'minutes'}
         else:
-            return {'interval': 15, 'unit': 'minutes'}
+            return {'interval': 33, 'unit': 'minutes'}
     
     def check_updates(self):
         """Проверяет обновления НСИ справочников

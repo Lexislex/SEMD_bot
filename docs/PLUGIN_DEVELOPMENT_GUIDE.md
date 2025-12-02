@@ -84,10 +84,10 @@ class Plugin(ScheduledPlugin):
     access_level = "all"
 
     def get_schedule_config(self):
-        return {'interval': 15, 'unit': 'minutes'}
+        return {'interval': 33, 'unit': 'minutes'}
 
     def check_updates(self):
-        # Выполняется каждые 15 минут
+        # Выполняется каждые 33 минуты
         pass
 ```
 
