@@ -7,8 +7,6 @@ from services.database_service import add_nsi_passport
 
 from config import get_config
 
-cfg = get_config()
-
 # Настройка логирования
 import logging
 logger = logging.getLogger(__name__)
@@ -20,6 +18,8 @@ def _build_proxies() -> Optional[Dict[str, str]]:
     Returns:
         Dict[str, str] или None: словарь с прокси или None, если прокси отключены
     """
+    cfg = get_config()
+
     if not cfg.proxy.enabled:
         return None
 
@@ -57,6 +57,8 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
     Raises:
         Exception: ошибки запроса или обработки ответа
     """
+    cfg = get_config()
+
     if not cfg.apis.fnsi_api_key:
         raise ValueError("Отсутствует FNSI_API_KEY в конфигурации")
 
