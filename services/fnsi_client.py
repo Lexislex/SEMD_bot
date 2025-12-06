@@ -4,44 +4,13 @@ from datetime import datetime
 from typing import Tuple, Optional, Dict
 from plugins.semd_checker.semd_logic import SEMDVersionFetcher
 from services.database_service import add_nsi_passport
+from services.proxy_utils import build_proxies
 
 from config import get_config
 
 # Настройка логирования
 import logging
 logger = logging.getLogger(__name__)
-
-def _build_proxies() -> Optional[Dict[str, str]]:
-    """
-    Формирует словарь с настройками прокси для requests.
-
-    Returns:
-        Dict[str, str] или None: словарь с прокси или None, если прокси отключены
-    """
-    cfg = get_config()
-
-    if not cfg.proxy.enabled:
-        return None
-
-    if not cfg.proxy.host or not cfg.proxy.port:
-        logger.warning("Прокси включен, но не указан хост или порт")
-        return None
-
-    # Формируем URL прокси
-    proxy_auth = ""
-    if cfg.proxy.user and cfg.proxy.password:
-        proxy_auth = f"{cfg.proxy.user}:{cfg.proxy.password}@"
-
-    proxy_url = f"{cfg.proxy.proxy_type}://{proxy_auth}{cfg.proxy.host}:{cfg.proxy.port}"
-
-    # Возвращаем словарь для http и https
-    proxies = {
-        'http': proxy_url,
-        'https': proxy_url,
-    }
-
-    logger.info(f"Используется прокси: {cfg.proxy.proxy_type}://{cfg.proxy.host}:{cfg.proxy.port}")
-    return proxies
 
 def get_version(nsi: str, ver: str = 'latest') -> dict:
     """
@@ -73,8 +42,8 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
     url = f'{cfg.apis.fnsi_api_url}/searchDictionary'\
           f'?userKey={cfg.apis.fnsi_api_key}&identifier={nsi}'
 
-    # Получаем настройки прокси
-    proxies = _build_proxies()
+    # Получаем настройки прокси для данного URL
+    proxies = build_proxies(url)
 
     try:
         response = session.get(

@@ -3,6 +3,7 @@ import glob
 import requests
 # подключаем модули для dotenv
 from config import get_config
+from services.proxy_utils import build_proxies
 cfg = get_config()
 
 # Настройка логирования
@@ -29,14 +30,23 @@ def download_file(nsi:str, ver: str, path: str=cfg.paths.files_dir) -> bool:
     if os.path.exists(os.path.join(path, out_file_name)):
         return True
     try:
-        # Удаляем предыдущие версии справочника 
+        # Удаляем предыдущие версии справочника
         for f in glob.glob(f'{path}{nsi}*.zip'):
             os.remove(f)
+
+        # Формируем URL для скачивания
+        download_url = f'{cfg.apis.fnsi_files_url}/{out_file_name}'
+
+        # Получаем настройки прокси для данного URL
+        proxies = build_proxies(download_url)
+
         # Скачиваем файл
         with open(os.path.join(path, out_file_name), 'wb') as out_stream:
             req = requests.get(
-                f'{cfg.apis.fnsi_files_url}/{out_file_name}',
-                stream=True, verify=cfg.paths.mzrf_cert_path)
+                download_url,
+                stream=True,
+                verify=cfg.paths.mzrf_cert_path,
+                proxies=proxies)
             if req.status_code != 200:
                 raise FileNotFoundError(req.json()['resultText'])
             # Скачиваем файл в папку
