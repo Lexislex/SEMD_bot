@@ -1,7 +1,10 @@
 """SEMD Checker Plugin - Search for SEMD document versions"""
+
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from plugins.base import BasePlugin
+
 from .handlers import SEMDHandlers
 
 
@@ -24,7 +27,7 @@ class Plugin(BasePlugin):
 
     def get_version(self) -> str:
         """Get plugin version"""
-        return "1.0.0"
+        return "1.2.0"
 
     def initialize(self) -> bool:
         """Initialize the plugin"""
@@ -39,22 +42,34 @@ class Plugin(BasePlugin):
         """Register commands"""
         return [
             {
-                'params': {'commands': ['about']},
-                'handler': self.handlers.handle_semd_about
+                "params": {"commands": ["about"]},
+                "handler": self.handlers.handle_semd_about,
             },
             {
-                'params': {'content_types': ['text']},
-                'handler': self.handlers.handle_semd_search
-            }
+                "params": {"content_types": ["text"]},
+                "handler": self.handlers.handle_semd_search,
+            },
         ]
 
     def get_callbacks(self) -> List[Dict[str, Any]]:
         """Register callback handlers"""
         return [
             {
-                'params': {'func': lambda call: call.data == "plugin_SEMDChecker"},
-                'handler': self.handlers.handle_semd_menu
-            }
+                "params": {"func": lambda call: call.data == "plugin_SEMDChecker"},
+                "handler": self.handlers.handle_semd_menu,
+            },
+            {
+                "params": {"func": lambda call: call.data.startswith("semd_t:")},
+                "handler": self.handlers.handle_search_result_click,
+            },
+            {
+                "params": {"func": lambda call: call.data.startswith("semd_p:")},
+                "handler": self.handlers.handle_pagination,
+            },
+            {
+                "params": {"func": lambda call: call.data == "semd_noop"},
+                "handler": self.handlers.handle_noop,
+            },
         ]
 
     def shutdown(self):
