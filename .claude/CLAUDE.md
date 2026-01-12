@@ -73,7 +73,21 @@ Environment variables in `.env` (see `env.example`):
 |--------|---------|-------------------|
 | master | stable, production | No (tests/, docs/, .claude/) |
 | develop | development | Yes |
+| feature/* | feature branches | Yes |
+
+### Flow
+
+```
+feature/xxx → PR → develop → PR → master
+```
+
+1. Create feature branch from develop: `git checkout -b feature/xxx develop`
+2. Develop and commit changes
+3. PR to develop, merge after review
+4. Release: PR from develop to master
+
+### Rules
 
 - Direct push to master is blocked
 - Merge to master only via PR
-- GitHub Actions checks for forbidden files
+- GitHub Actions checks for forbidden files in master
