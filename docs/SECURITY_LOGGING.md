@@ -1,189 +1,62 @@
-# Безопасность и логирование
+# Security & Logging
 
-## Обзор
+## LogSanitizer
 
-В SEMD Bot реализована система защиты от утечек чувствительных данных при логировании. Все ключи, токены и другие конфиденциальные данные автоматически маскируются перед тем, как попасть в логи.
+Auto-masks sensitive data in logs before writing.
 
-## LogSanitizer - фильтр для очистки логов
+### Masked Data Types
 
-### Что маскируется?
+| Type | Example Before | Example After |
+|------|----------------|---------------|
+| API keys (UUID) | `2b6a3146-9b41-4d0a-a3b0-51d294cf2e03` | `xxxx****` |
+| Bot tokens | `123456:ABC-DEF` | `xxxx:****` |
+| Email | `user@example.com` | `u***@example.com` |
+| File paths | `/home/user/app` | `/***` |
+| URL params | `?userKey=secret` | `?userKey=****` |
 
-`LogSanitizer` автоматически маскирует следующие типы данных:
+### How It Works
 
-#### 1. API ключи (UUID формат)
-```
-БЫЛО: [UUID ключ с полными 32 символами]
-СТАЛО: xxxx****
-```
+- Initialized in `utils/logging_setup.py`
+- Filters all log handlers automatically
+- Processes LogRecord before formatting
 
-#### 2. Telegram Bot токены
-```
-БЫЛО: [числа]:[буквы и символы]
-СТАЛО: xxxx:****
-```
+## Logging Best Practices
 
-#### 3. Email адреса
-```
-БЫЛО: user@example.com
-СТАЛО: u***@example.com
-```
-
-#### 4. Пути файлов (Unix-like системы)
-```
-БЫЛО: /Users/[username]/dev/app
-СТАЛО: /***
-
-БЫЛО: /home/[username]/app
-СТАЛО: /***
-```
-
-#### 5. URL параметры с ключами
-```
-БЫЛО: https://api.example.ru/search?userKey=[ключ]&id=1
-СТАЛО: https://api.example.ru/search?userKey=****&id=1
-```
-
-### Как это работает?
-
-1. **Автоматическая инициализация**
-   - LogSanitizer активируется в `utils/logging_setup.py`
-   - Добавляется фильтр ко всем handlers приложения
-   - Срабатывает ДО того, как сообщение запишется в лог
-
-2. **Регулярные выражения**
-   - Используются регулярные выражения для поиска паттернов
-   - Каждый паттерн заменяется на маскированную версию
-   - Процесс прозрачен для разработчика
-
-3. **На уровне LogRecord**
-   - Санитайзер перехватывает LogRecord перед форматированием
-   - Очищаются как основное сообщение, так и traceback
-
-## Логирование чувствительных данных
-
-### ✅ ПРАВИЛЬНО - Логировать только необходимое
+### Do
 
 ```python
-# Хорошо - логируем только результат, без ключей
-logger.info(f"Успешно получена информация для справочника {nsi}")
-
-# Хорошо - логируем параметры без значений ключей
-logger.debug(f"Запрос к API для справочника {nsi}")
+logger.info(f"Got info for dictionary {nsi_id}")
+logger.debug(f"API request for {nsi_id}")
 ```
 
-### ❌ НЕПРАВИЛЬНО - Логировать чувствительные данные напрямую
+### Don't
 
 ```python
-# Плохо - логирует полный URL с ключом
-# (будет маскирован санитайзером, но не стоит полагаться на это)
-logger.info(f"Запрос к {url_with_key}")
-
-# Плохо - exc_info в production может раскрыть конфигурацию
-logger.exception("Ошибка при запросе")  # ТОЛЬКО в DEBUG!
+logger.info(f"Request to {url_with_key}")  # Contains API key
+logger.exception("Error")  # Full traceback in production
 ```
 
-### Безопасное логирование исключений
+### Safe Exception Logging
 
 ```python
-import logging
-
 try:
-    # выполнение операции
     risky_operation()
 except Exception as e:
-    # Общее сообщение об ошибке - БЕЗ деталей
-    logger.error(f"Ошибка при выполнении операции")
-
-    # Детали ТОЛЬКО в DEBUG режиме
+    logger.error("Operation failed")
     if logger.isEnabledFor(logging.DEBUG):
-        logger.exception("Полные детали ошибки")
+        logger.exception("Details")
 ```
 
-## Примеры из кода
+## Log Levels
 
-### services/fnsi_client.py
+| Environment | Level | Shows |
+|-------------|-------|-------|
+| Production | INFO | Events, results, errors (no details) |
+| Development | DEBUG | Full details, tracebacks |
 
-**БЫЛО (рискованно):**
-```python
-except Exception as e:
-    logger.exception(f"Неожиданная ошибка: {str(e)}")
-    return False, None
-```
+## Key Rules
 
-**СТАЛО (защищено):**
-```python
-except Exception as e:
-    logger.error(f"Неожиданная ошибка при обновлении справочника")
-    # Полный стек вызовов логируется только в DEBUG режиме
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.exception(f"Детали исключения")
-    return False, None
-```
-
-## Тестирование защиты
-
-Проверка работает через pytest:
-
-```bash
-poetry run pytest tests/test_log_sanitizer.py -v
-```
-
-### Что проверяется?
-
-- Маскирование UUID ключей
-- Маскирование Telegram токенов
-- Маскирование email адресов
-- Маскирование путей файлов
-- Маскирование URL параметров
-- Множественные чувствительные данные в одном сообщении
-- Что обычные данные не маскируются
-
-**Результат: 13 тестов, все passed ✅**
-
-## Уровни логирования
-
-### В Production (LOG_LEVEL=INFO)
-
-- **INFO** - основные события, результаты операций
-- **WARNING** - предупреждения (сторонние библиотеки)
-- **ERROR** - ошибки без деталей
-
-**Чувствительные данные НЕ видны в информационных сообщениях**
-
-### В Development (LOG_LEVEL=DEBUG)
-
-- **DEBUG** - детали операций, параметры запросов
-- **Полные traceback'и только если необходимо**
-
-**Все данные маскируются санитайзером, но видны больше деталей для отладки**
-
-## Best Practices
-
-### При добавлении новых логов
-
-1. **Не логируйте ключи явно** - даже если санитайзер защитит, лучше их не писать
-2. **Логируйте только ID, версии, статусы** - это безопасные данные
-3. **Детали ошибок только в DEBUG** - используйте проверку `logger.isEnabledFor(logging.DEBUG)`
-4. **exc_info только в DEBUG** - не используйте `exc_info=True` в production логах
-5. **Тестируйте с реальными данными локально** - убедитесь что ключи не попадают в логи
-
-### При review кода
-
-- Проверяйте что в логирование не попадают URL с параметрами
-- Убедитесь что `logger.exception()` используется только в DEBUG
-- Проверяйте что чувствительные данные логируются с маскировкой
-
-
-## Важно помнить
-
-⚠️ **LogSanitizer - это подстраховка, а не основная линия защиты.**
-
-Основная ответственность лежит на разработчиках:
-- Не пишите ключи в логи изначально
-- Следуйте best practices логирования
-- Регулярно проверяйте логи вручную
-- Не коммитьте файлы с реальными ключами
-
-## Контакты
-
-За вопросы по безопасности обращайтесь к team lead.
+1. Never log keys/tokens explicitly
+2. Log only IDs, versions, statuses
+3. Use `logger.isEnabledFor(logging.DEBUG)` for detailed errors
+4. Test locally with real data to verify masking
