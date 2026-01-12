@@ -2,6 +2,7 @@
 
 import logging
 
+from cachetools import TTLCache
 from telebot.types import CallbackQuery, Message
 
 from services.database_service import add_log
@@ -16,14 +17,19 @@ logger = logging.getLogger(__name__)
 class SEMDHandlers:
     # Page size for search results
     PAGE_SIZE = 5
+    # Cache settings for user searches
+    _SEARCH_CACHE_MAX_SIZE = 1000
+    _SEARCH_CACHE_TTL = 600  # 10 minutes
 
     def __init__(self, bot, config):
         self.bot = bot
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.semd = SEMD1520()
-        # Store last search query per user for pagination
-        self._user_searches: dict[int, str] = {}
+        # Store last search query per user for pagination (with TTL and size limit)
+        self._user_searches: TTLCache = TTLCache(
+            maxsize=self._SEARCH_CACHE_MAX_SIZE, ttl=self._SEARCH_CACHE_TTL
+        )
 
     def handle_semd_search(self, message: Message):
         """Handle text messages - search for SEMD by OID or name"""
