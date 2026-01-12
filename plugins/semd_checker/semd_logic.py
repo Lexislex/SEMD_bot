@@ -231,22 +231,24 @@ class SEMD1520:
             logger.error(f"Error getting newest SEMD versions: {e}")
             return None
 
-    def search_by_name(self, query: str, limit: int = 5) -> list:
+    def search_by_name(self, query: str, limit: int = 5, offset: int = 0) -> tuple:
         """
         Search SEMD documents by name.
 
         Args:
             query: Search string (case-insensitive)
             limit: Maximum number of unique document types to return
+            offset: Number of results to skip (for pagination)
 
         Returns:
-            List of tuples: [(TYPE, display_name), ...]
-            where display_name is shortened NAME without "(CDA)" suffix
+            Tuple: (results_list, total_count)
+            where results_list is [(TYPE, display_name), ...]
+            and total_count is total number of matching document types
         """
         self._check_and_reload_if_needed()
 
         if self.df is None or not query.strip():
-            return []
+            return [], 0
 
         try:
             # Case-insensitive search in NAME column
@@ -254,7 +256,7 @@ class SEMD1520:
             matches = self.df[mask].copy()
 
             if matches.empty:
-                return []
+                return [], 0
 
             # Group by TYPE and get one representative NAME per type
             # Take the latest version's name (highest OID within each TYPE)
@@ -263,22 +265,27 @@ class SEMD1520:
             )
 
             # Create result list with (TYPE, display_name)
-            results = []
+            all_results = []
             for doc_type, row in grouped.iterrows():
                 # Clean up name: remove "(CDA)" suffix
                 display_name = row["NAME"].split("(CDA)")[0].strip()
                 # Truncate long names for button display (max ~40 chars)
                 if len(display_name) > 40:
                     display_name = display_name[:37] + "..."
-                results.append((int(doc_type), display_name))
+                all_results.append((int(doc_type), display_name))
 
-            # Sort by TYPE and limit results
-            results.sort(key=lambda x: x[0])
-            return results[:limit]
+            # Sort by TYPE
+            all_results.sort(key=lambda x: x[0])
+            total_count = len(all_results)
+
+            # Apply pagination
+            paginated_results = all_results[offset : offset + limit]
+
+            return paginated_results, total_count
 
         except Exception as e:
             logger.error(f"Error searching SEMD by name: {e}")
-            return []
+            return [], 0
 
     def get_semd_versions_by_type(self, doc_type: int):
         """

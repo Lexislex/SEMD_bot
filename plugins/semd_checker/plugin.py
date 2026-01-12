@@ -27,7 +27,7 @@ class Plugin(BasePlugin):
 
     def get_version(self) -> str:
         """Get plugin version"""
-        return "1.1.0"
+        return "1.2.0"
 
     def initialize(self) -> bool:
         """Initialize the plugin"""
@@ -61,6 +61,14 @@ class Plugin(BasePlugin):
             {
                 "params": {"func": lambda call: call.data.startswith("semd_t:")},
                 "handler": self.handlers.handle_search_result_click,
+            },
+            {
+                "params": {"func": lambda call: call.data.startswith("semd_p:")},
+                "handler": self.handlers.handle_pagination,
+            },
+            {
+                "params": {"func": lambda call: call.data == "semd_noop"},
+                "handler": self.handlers.handle_noop,
             },
         ]
 

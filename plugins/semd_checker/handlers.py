@@ -14,11 +14,16 @@ logger = logging.getLogger(__name__)
 
 
 class SEMDHandlers:
+    # Page size for search results
+    PAGE_SIZE = 5
+
     def __init__(self, bot, config):
         self.bot = bot
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.semd = SEMD1520()
+        # Store last search query per user for pagination
+        self._user_searches: dict[int, str] = {}
 
     def handle_semd_search(self, message: Message):
         """Handle text messages - search for SEMD by OID or name"""
@@ -77,7 +82,9 @@ class SEMDHandlers:
 
             except ValueError:
                 # Not a number - try text search
-                results = self.semd.search_by_name(search_text, limit=5)
+                results, total_count = self.semd.search_by_name(
+                    search_text, limit=self.PAGE_SIZE, offset=0
+                )
 
                 if not results:
                     markup = get_back_button()
@@ -92,11 +99,19 @@ class SEMDHandlers:
                     )
                     return
 
+                # Store search query for pagination
+                self._user_searches[message.from_user.id] = search_text
+
                 # Show search results as buttons
-                markup = get_search_results_keyboard(results)
+                markup = get_search_results_keyboard(
+                    results,
+                    total_count=total_count,
+                    current_offset=0,
+                    page_size=self.PAGE_SIZE,
+                )
                 sent_msg = self.bot.send_message(
                     message.chat.id,
-                    f"🔍 Результаты поиска по «{search_text}»:\n\n"
+                    f"🔍 Результаты поиска по «{search_text}» ({total_count} найдено):\n\n"
                     "Выберите вид документа или введите новый запрос:",
                     reply_markup=markup,
                 )
@@ -168,7 +183,7 @@ class SEMDHandlers:
                 "1. Отправьте номер СЭМД OID или название\n"
                 "2. Получите список доступных версий\n"
                 "3. Посмотрите даты начала и завершения использования\n\n"
-                "<b>Версия:</b> 1.1.0"
+                "<b>Версия:</b> 1.2.0"
             )
 
             markup = get_back_button()
@@ -244,3 +259,59 @@ class SEMDHandlers:
             self.bot.answer_callback_query(
                 call.id, "❌ Ошибка при обработке запроса", show_alert=True
             )
+
+    def handle_pagination(self, call: CallbackQuery):
+        """Handle pagination button clicks"""
+        try:
+            # Parse callback data: "semd_p:{offset}"
+            offset = int(call.data.split(":")[1])
+            user_id = call.from_user.id
+
+            # Get stored search query
+            search_text = self._user_searches.get(user_id)
+            if not search_text:
+                self.bot.answer_callback_query(
+                    call.id,
+                    "Поиск устарел. Введите запрос заново.",
+                    show_alert=True,
+                )
+                return
+
+            # Get results for this page
+            results, total_count = self.semd.search_by_name(
+                search_text, limit=self.PAGE_SIZE, offset=offset
+            )
+
+            if not results:
+                self.bot.answer_callback_query(call.id, "Нет результатов")
+                return
+
+            # Update keyboard with new page
+            markup = get_search_results_keyboard(
+                results,
+                total_count=total_count,
+                current_offset=offset,
+                page_size=self.PAGE_SIZE,
+            )
+
+            self.bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=f"🔍 Результаты поиска по «{search_text}» ({total_count} найдено):\n\n"
+                "Выберите вид документа или введите новый запрос:",
+                reply_markup=markup,
+            )
+            get_message_manager().update_message(
+                call.message.chat.id, call.message.message_id, call.from_user.id
+            )
+            self.bot.answer_callback_query(call.id)
+
+        except Exception as e:
+            self.logger.error(f"Error in pagination handler: {e}")
+            self.bot.answer_callback_query(
+                call.id, "❌ Ошибка при обработке запроса", show_alert=True
+            )
+
+    def handle_noop(self, call: CallbackQuery):
+        """Handle noop callback (page indicator button)"""
+        self.bot.answer_callback_query(call.id)
