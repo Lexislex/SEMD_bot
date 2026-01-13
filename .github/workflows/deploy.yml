@@ -25,18 +25,18 @@ jobs:
             ~/.local/bin/poetry install --only main
 
             echo "=== Restarting service ==="
-            sudo systemctl restart SEMDbot.service
+            sudo systemctl restart SEMD_bot.service
 
             echo "=== Waiting for service to start ==="
             sleep 5
 
             echo "=== Checking service status ==="
-            if systemctl is-active --quiet SEMDbot.service; then
+            if systemctl is-active --quiet SEMD_bot.service; then
               echo "✅ Service is running"
-              systemctl status SEMDbot.service --no-pager
+              systemctl status SEMD_bot.service --no-pager
             else
               echo "❌ Service failed to start"
-              journalctl -u SEMDbot.service -n 20 --no-pager
+              journalctl -u SEMD_bot.service -n 20 --no-pager
               exit 1
             fi
 
