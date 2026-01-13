@@ -1,0 +1,58 @@
+name: Protect Master Branch
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  check-forbidden-files:
+    name: Check for dev-only files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for forbidden files
+        run: |
+          echo "Checking for dev-only files in PR to master..."
+
+          FORBIDDEN_FOUND=0
+
+          # Проверяем наличие запрещённых папок
+          if [ -d "tests" ] && [ "$(ls -A tests 2>/dev/null)" ]; then
+            echo "❌ Found: tests/"
+            ls -la tests/
+            FORBIDDEN_FOUND=1
+          fi
+
+          if [ -d "docs" ] && [ "$(ls -A docs 2>/dev/null)" ]; then
+            echo "❌ Found: docs/"
+            ls -la docs/
+            FORBIDDEN_FOUND=1
+          fi
+
+          if [ -d ".claude" ] && [ "$(ls -A .claude 2>/dev/null)" ]; then
+            echo "❌ Found: .claude/"
+            ls -la .claude/
+            FORBIDDEN_FOUND=1
+          fi
+
+          if [ $FORBIDDEN_FOUND -eq 1 ]; then
+            echo ""
+            echo "============================================"
+            echo "❌ PR BLOCKED: dev-only files detected"
+            echo "============================================"
+            echo ""
+            echo "The following directories are not allowed in master:"
+            echo "  - tests/"
+            echo "  - docs/"
+            echo "  - .claude/"
+            echo ""
+            echo "Please remove these files from your PR before merging."
+            exit 1
+          fi
+
+          echo "✅ No forbidden files found. PR is clean."
