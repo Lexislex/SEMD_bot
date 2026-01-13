@@ -1,7 +1,9 @@
 """SEMD Checker plugin handlers"""
 
 import logging
+from dataclasses import dataclass
 
+from cachetools import TTLCache
 from telebot.types import CallbackQuery, Message
 
 from services.database_service import add_log
@@ -13,17 +15,30 @@ from .semd_logic import SEMD1520  # TODO сделать класс общим
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class SearchCache:
+    """Cached search results for pagination"""
+
+    query: str
+    results: list[tuple[int, str]]
+    total: int
+
+
 class SEMDHandlers:
     # Page size for search results
     PAGE_SIZE = 5
+    # Cache settings
+    _CACHE_MAXSIZE = 100
+    _CACHE_TTL = 300  # 5 minutes
 
     def __init__(self, bot, config):
         self.bot = bot
         self.config = config
-        self.logger = logging.getLogger(__name__)
         self.semd = SEMD1520()
-        # Store last search query per user for pagination
-        self._user_searches: dict[int, str] = {}
+        # Store search results per user for pagination (TTLCache with auto-expiry)
+        self._user_searches: TTLCache[int, SearchCache] = TTLCache(
+            maxsize=self._CACHE_MAXSIZE, ttl=self._CACHE_TTL
+        )
 
     def handle_semd_search(self, message: Message):
         """Handle text messages - search for SEMD by OID or name"""
@@ -82,11 +97,10 @@ class SEMDHandlers:
 
             except ValueError:
                 # Not a number - try text search
-                results, total_count = self.semd.search_by_name(
-                    search_text, limit=self.PAGE_SIZE, offset=0
-                )
+                # Get ALL results at once (for caching), then paginate
+                all_results, total_count = self.semd.search_by_name(search_text)
 
-                if not results:
+                if not all_results:
                     markup = get_back_button()
                     sent_msg = self.bot.send_message(
                         message.chat.id,
@@ -99,12 +113,17 @@ class SEMDHandlers:
                     )
                     return
 
-                # Store search query for pagination
-                self._user_searches[message.from_user.id] = search_text
+                # Cache all results for pagination (no repeated searches needed)
+                self._user_searches[message.from_user.id] = SearchCache(
+                    query=search_text,
+                    results=all_results,
+                    total=total_count,
+                )
 
-                # Show search results as buttons
+                # Show first page of results
+                first_page = all_results[: self.PAGE_SIZE]
                 markup = get_search_results_keyboard(
-                    results,
+                    first_page,
                     total_count=total_count,
                     current_offset=0,
                     page_size=self.PAGE_SIZE,
@@ -120,7 +139,7 @@ class SEMDHandlers:
                 )
 
         except Exception as e:
-            self.logger.error(f"Error in SEMD search: {e}")
+            logger.error(f"Error in SEMD search: {e}")
             markup = get_back_button()
             sent_msg = self.bot.send_message(
                 message.chat.id,
@@ -158,7 +177,7 @@ class SEMDHandlers:
             )
 
         except Exception as e:
-            self.logger.error(f"Error in about handler: {e}")
+            logger.error(f"Error in about handler: {e}")
             markup = get_back_button()
             sent_msg = self.bot.send_message(
                 message.chat.id,
@@ -200,7 +219,7 @@ class SEMDHandlers:
             )
             self.bot.answer_callback_query(call.id)
         except Exception as e:
-            self.logger.error(f"Error in SEMD menu handler: {e}")
+            logger.error(f"Error in SEMD menu handler: {e}")
             self.bot.answer_callback_query(
                 call.id, "❌ Ошибка при обработке запроса", show_alert=True
             )
@@ -255,7 +274,7 @@ class SEMDHandlers:
             self.bot.answer_callback_query(call.id)
 
         except Exception as e:
-            self.logger.error(f"Error in search result handler: {e}")
+            logger.error(f"Error in search result handler: {e}")
             self.bot.answer_callback_query(
                 call.id, "❌ Ошибка при обработке запроса", show_alert=True
             )
@@ -267,9 +286,9 @@ class SEMDHandlers:
             offset = int(call.data.split(":")[1])
             user_id = call.from_user.id
 
-            # Get stored search query
-            search_text = self._user_searches.get(user_id)
-            if not search_text:
+            # Get cached search results (no repeated search needed)
+            cache = self._user_searches.get(user_id)
+            if not cache:
                 self.bot.answer_callback_query(
                     call.id,
                     "Поиск устарел. Введите запрос заново.",
@@ -277,19 +296,17 @@ class SEMDHandlers:
                 )
                 return
 
-            # Get results for this page
-            results, total_count = self.semd.search_by_name(
-                search_text, limit=self.PAGE_SIZE, offset=offset
-            )
+            # Get page from cached results (instant, no search)
+            page_results = cache.results[offset : offset + self.PAGE_SIZE]
 
-            if not results:
+            if not page_results:
                 self.bot.answer_callback_query(call.id, "Нет результатов")
                 return
 
             # Update keyboard with new page
             markup = get_search_results_keyboard(
-                results,
-                total_count=total_count,
+                page_results,
+                total_count=cache.total,
                 current_offset=offset,
                 page_size=self.PAGE_SIZE,
             )
@@ -297,7 +314,7 @@ class SEMDHandlers:
             self.bot.edit_message_text(
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                text=f"🔍 Результаты поиска по «{search_text}» ({total_count} найдено):\n\n"
+                text=f"🔍 Результаты поиска по «{cache.query}» ({cache.total} найдено):\n\n"
                 "Выберите вид документа или введите новый запрос:",
                 reply_markup=markup,
             )
@@ -307,7 +324,7 @@ class SEMDHandlers:
             self.bot.answer_callback_query(call.id)
 
         except Exception as e:
-            self.logger.error(f"Error in pagination handler: {e}")
+            logger.error(f"Error in pagination handler: {e}")
             self.bot.answer_callback_query(
                 call.id, "❌ Ошибка при обработке запроса", show_alert=True
             )
