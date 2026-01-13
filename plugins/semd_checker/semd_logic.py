@@ -2,6 +2,7 @@
 
 import logging
 import sqlite3
+import time
 from datetime import datetime
 
 import pandas as pd
@@ -72,12 +73,15 @@ class SEMD1520:
 
     # Standard FNSI OID for SEMD 1520
     SEMD_OID = "1.2.643.5.1.13.13.11.1520"
+    # Check version at most once per this interval (seconds)
+    VERSION_CHECK_INTERVAL = 60
 
     def __init__(self):
         self.id = self.SEMD_OID
         self.version_fetcher = SEMDVersionFetcher(self.id)
         self.latest_version = self.version_fetcher.latest
         self.df = None
+        self._last_version_check = 0.0
         self._load_data()
 
     def _load_data(self):
@@ -109,7 +113,16 @@ class SEMD1520:
             self.df = None
 
     def _check_and_reload_if_needed(self):
-        """Check if version has been updated in database and reload data if needed"""
+        """Check if version has been updated in database and reload data if needed.
+
+        Version check is throttled to once per VERSION_CHECK_INTERVAL seconds
+        to avoid excessive database queries on frequent search requests.
+        """
+        now = time.time()
+        if now - self._last_version_check < self.VERSION_CHECK_INTERVAL:
+            return  # Skip check, too soon since last check
+
+        self._last_version_check = now
         try:
             current_version = self.version_fetcher.get_version()
             if current_version != self.latest_version:
@@ -231,13 +244,15 @@ class SEMD1520:
             logger.error(f"Error getting newest SEMD versions: {e}")
             return None
 
-    def search_by_name(self, query: str, limit: int = 5, offset: int = 0) -> tuple:
+    def search_by_name(
+        self, query: str, limit: int | None = None, offset: int = 0
+    ) -> tuple:
         """
         Search SEMD documents by name.
 
         Args:
             query: Search string (case-insensitive)
-            limit: Maximum number of unique document types to return
+            limit: Maximum number of unique document types to return (None = all)
             offset: Number of results to skip (for pagination)
 
         Returns:
@@ -278,8 +293,11 @@ class SEMD1520:
             all_results.sort(key=lambda x: x[0])
             total_count = len(all_results)
 
-            # Apply pagination
-            paginated_results = all_results[offset : offset + limit]
+            # Apply pagination if limit specified
+            if limit is not None:
+                paginated_results = all_results[offset : offset + limit]
+            else:
+                paginated_results = all_results[offset:] if offset else all_results
 
             return paginated_results, total_count
 
