@@ -34,7 +34,6 @@ class SEMDHandlers:
     def __init__(self, bot, config):
         self.bot = bot
         self.config = config
-        self.logger = logging.getLogger(__name__)
         self.semd = SEMD1520()
         # Store search results per user for pagination (TTLCache with auto-expiry)
         self._user_searches: TTLCache[int, SearchCache] = TTLCache(
@@ -140,7 +139,7 @@ class SEMDHandlers:
                 )
 
         except Exception as e:
-            self.logger.error(f"Error in SEMD search: {e}")
+            logger.error(f"Error in SEMD search: {e}")
             markup = get_back_button()
             sent_msg = self.bot.send_message(
                 message.chat.id,
@@ -178,7 +177,7 @@ class SEMDHandlers:
             )
 
         except Exception as e:
-            self.logger.error(f"Error in about handler: {e}")
+            logger.error(f"Error in about handler: {e}")
             markup = get_back_button()
             sent_msg = self.bot.send_message(
                 message.chat.id,
@@ -220,7 +219,7 @@ class SEMDHandlers:
             )
             self.bot.answer_callback_query(call.id)
         except Exception as e:
-            self.logger.error(f"Error in SEMD menu handler: {e}")
+            logger.error(f"Error in SEMD menu handler: {e}")
             self.bot.answer_callback_query(
                 call.id, "❌ Ошибка при обработке запроса", show_alert=True
             )
@@ -275,7 +274,7 @@ class SEMDHandlers:
             self.bot.answer_callback_query(call.id)
 
         except Exception as e:
-            self.logger.error(f"Error in search result handler: {e}")
+            logger.error(f"Error in search result handler: {e}")
             self.bot.answer_callback_query(
                 call.id, "❌ Ошибка при обработке запроса", show_alert=True
             )
@@ -325,7 +324,7 @@ class SEMDHandlers:
             self.bot.answer_callback_query(call.id)
 
         except Exception as e:
-            self.logger.error(f"Error in pagination handler: {e}")
+            logger.error(f"Error in pagination handler: {e}")
             self.bot.answer_callback_query(
                 call.id, "❌ Ошибка при обработке запроса", show_alert=True
             )
