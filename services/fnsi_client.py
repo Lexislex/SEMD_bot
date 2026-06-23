@@ -1,18 +1,25 @@
-import requests
-import dateutil.parser as parser
-from datetime import datetime
-from typing import Tuple, Optional, Dict
-from plugins.semd_checker.semd_logic import SEMDVersionFetcher
-from services.database_service import add_nsi_passport
-from services.proxy_utils import build_proxies
-
-from config import get_config
-
 # Настройка логирования
 import logging
+from datetime import datetime
+from typing import Dict, Optional, Tuple
+
+import dateutil.parser as parser
+import requests
+
+from config import get_config
+from plugins.semd_checker.semd_logic import SEMDVersionFetcher
+from services.database_service import add_nsi_passport
+from services.proxy_utils import build_proxies, build_url
+
 logger = logging.getLogger(__name__)
 
-def get_version(nsi: str, ver: str = 'latest') -> dict:
+
+def _build_fnsi_url(base_url: str, endpoint: str) -> str:
+    """Собирает URL без двойного слеша."""
+    return f"{base_url.rstrip('/')}/{endpoint.lstrip('/')}"
+
+
+def get_version(nsi: str, ver: str = "latest") -> dict:
     """
     Получает информацию о справочниках с официального сайта ФНСИ.
 
@@ -34,23 +41,34 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
     if not cfg.paths.mzrf_cert_path:
         raise ValueError("Отсутствует MZRF_CERT в конфигурации")
 
+    if not cfg.paths.mzrf_cert_path.exists():
+        error_msg = (
+            f"Сертификат Минздрава не найден: {cfg.paths.mzrf_cert_path}. "
+            f"Выполните poetry run python scripts/fetch_fnsi_cert.py"
+        )
+        logger.error(error_msg)
+        raise ConnectionError(error_msg)
+
     headers = {
-        'Accept': 'application/json;charset=UTF-8',
-        'Content-Type': 'application/json'
+        "Accept": "application/json;charset=UTF-8",
+        "Content-Type": "application/json",
     }
     session = requests.Session()
-    url = f'{cfg.apis.fnsi_api_url}/searchDictionary'\
-          f'?userKey={cfg.apis.fnsi_api_key}&identifier={nsi}'
+    url = (
+        f"{build_url(cfg.apis.fnsi_api_url, 'searchDictionary')}"
+        f"?userKey={cfg.apis.fnsi_api_key}&identifier={nsi}"
+    )
 
     # Получаем настройки прокси для данного URL
     proxies = build_proxies(url)
 
     try:
         response = session.get(
-            url, headers=headers,
-            verify=cfg.paths.mzrf_cert_path,
+            url,
+            headers=headers,
+            verify=str(cfg.paths.mzrf_cert_path),
             timeout=30,  # Таймаут 30 секунд
-            proxies=proxies  # Добавляем прокси
+            proxies=proxies,  # Добавляем прокси
         )
         response.raise_for_status()  # Проверка HTTP статуса
         logger.debug(f"Успешно получен ответ от ФНСИ для справочника {nsi}")
@@ -60,67 +78,94 @@ def get_version(nsi: str, ver: str = 'latest') -> dict:
         logger.debug(f"Timeout при запросе к ФНСИ: {nsi}")
         raise ConnectionError(error_msg)
 
+    except requests.exceptions.SSLError as e:
+        error_msg = f"SSL ошибка при запросе к ФНСИ для справочника {nsi}: {e}"
+        logger.error(error_msg)
+        raise ConnectionError(error_msg)
+
     except requests.exceptions.ConnectionError:
         error_msg = f"Ошибка соединения с ФНСИ для справочника {nsi}"
         logger.debug(f"Connection error при запросе к ФНСИ: {nsi}")
         raise ConnectionError(error_msg)
 
     except requests.exceptions.RequestException as e:
-        error_msg = f"Ошибка запроса к ФНСИ для {nsi}: запрос не выполнен"
-        logger.debug(f"RequestException для справочника {nsi}")
+        error_msg = f"Ошибка запроса к ФНСИ для {nsi}: {e}"
+        logger.error(error_msg)
         raise ConnectionError(error_msg)
-    
+
     # Проверяем, что ответ не пустой
     if not response.content:
         error_msg = f"Пустой ответ от ФНСИ для справочника {nsi}"
         raise ValueError(error_msg)
-    
+
     try:
-        data = response.json()['list'][0]
+        response_data = response.json()
     except ValueError as e:
         error_msg = f"Невалидный JSON ответ от ФНСИ для {nsi}: {str(e)}"
+        raise ValueError(error_msg)
+
+    # Проверяем наличие и непустоту списка
+    dictionary_list = response_data.get("list")
+    if not dictionary_list or not isinstance(dictionary_list, list):
+        error_msg = f"Ответ от ФНСИ для {nsi} не содержит списка справочников"
+        raise ValueError(error_msg)
+
+    try:
+        data = dictionary_list[0]
+    except IndexError:
+        error_msg = f"ФНСИ вернул пустой список для справочника {nsi}"
         raise ValueError(error_msg)
 
     # Проверяем, что data не None и является словарем
     if data is None:
         error_msg = f"Ответ от ФНСИ для {nsi} равен None"
         raise ValueError(error_msg)
-    
+
     if not isinstance(data, dict):
         error_msg = f"Ответ от ФНСИ для {nsi} не является словарем: {type(data)}"
         raise ValueError(error_msg)
-    
+
     # Проверка обязательных полей в ответе
-    required_fields = ['oid', 'fullName', 'shortName', 'publishDate', 'version', 'releaseNotes']
+    required_fields = [
+        "oid",
+        "fullName",
+        "shortName",
+        "publishDate",
+        "version",
+        "releaseNotes",
+    ]
     missing_fields = [field for field in required_fields if field not in data]
 
     if missing_fields:
         error_msg = f"Отсутствуют обязательные поля в ответе ФНСИ для {nsi}: {', '.join(missing_fields)}"
         raise ValueError(error_msg)
-    
+
     # Проверяем, что обязательные поля не None, кроме releaseNotes
     for field in required_fields:
-        if field == 'releaseNotes':
+        if field == "releaseNotes":
             # Для releaseNotes разрешаем None - обработаем позже
             continue
         if data.get(field) is None:
             error_msg = f"Поле '{field}' равно None в ответе ФНСИ для {nsi}"
             raise ValueError(error_msg)
-    
-    update = datetime.strptime(data['publishDate'], "%d.%m.%Y %H:%M")
+
+    update = datetime.strptime(data["publishDate"], "%d.%m.%Y %H:%M")
     fnsi_info = {
-        'id': data['oid'],
-        'fullName': data['fullName'],
-        'shortName': data['shortName'],
-        'lastUpdate': update.isoformat(),
-        'version': data['version'],
-        'releaseNotes': data['releaseNotes'],
+        "id": data["oid"],
+        "fullName": data["fullName"],
+        "shortName": data["shortName"],
+        "lastUpdate": update.isoformat(),
+        "version": data["version"],
+        "releaseNotes": data["releaseNotes"],
     }
-    
-    logger.info(f"Успешно получена информация для справочника {nsi}, версия {data['version']}")
+
+    logger.info(
+        f"Успешно получена информация для справочника {nsi}, версия {data['version']}"
+    )
     return fnsi_info
 
-def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, dict]:
+
+def nsi_passport_updater(fnsi_oid: str, vers: str = "latest") -> Tuple[bool, dict]:
     """
     Обновляет паспорт справочника ФНСИ.
 
@@ -139,24 +184,28 @@ def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, dic
 
         # Проверяем, что объект fnsi не None
         if fnsi is None:
-            logger.warning(f"Не удалось получить информацию о справочнике {fnsi_oid} из базы")
+            logger.warning(
+                f"Не удалось получить информацию о справочнике {fnsi_oid} из базы"
+            )
             return False, None
 
         # Получаем актуальную информацию с ФНСИ
         fnsi_info = get_version(fnsi_oid, vers)
 
         # Проверяем, что fnsi_info не None и содержит необходимые поля
-        if not fnsi_info or 'version' not in fnsi_info:
+        if not fnsi_info or "version" not in fnsi_info:
             logger.warning(f"Невалидная информация от ФНСИ для справочника {fnsi_oid}")
             return False, None
 
         # Проверяем, есть ли обновление
-        current_version = getattr(fnsi, 'latest', None)
-        if current_version != fnsi_info['version']:
+        current_version = getattr(fnsi, "latest", None)
+        if current_version != fnsi_info["version"]:
             # Пытаемся добавить новую версию в базу
             success = add_nsi_passport(fnsi_info)
             if success:
-                logger.info(f"Успешно обновлен справочник {fnsi_oid} до версии {fnsi_info['version']}")
+                logger.info(
+                    f"Успешно обновлен справочник {fnsi_oid} до версии {fnsi_info['version']}"
+                )
                 return True, fnsi_info
             else:
                 logger.error(f"Не удалось добавить справочник {fnsi_oid} в базу данных")
@@ -166,18 +215,16 @@ def nsi_passport_updater(fnsi_oid: str, vers: str = 'latest') -> Tuple[bool, dic
             return False, None
 
     except (ConnectionError, ValueError) as e:
-        logger.error(f"Ошибка при обновлении справочника {fnsi_oid}")
-        # Деталь ошибки логируется только в DEBUG
+        logger.error(f"Ошибка при обновлении справочника {fnsi_oid}: {e}")
         logger.debug(f"Детали ошибки для {fnsi_oid}: {str(e)}")
         return False, None
 
     except Exception as e:
-        logger.error(f"Неожиданная ошибка при обновлении справочника {fnsi_oid}")
-        # Полный стек вызовов логируется только в DEBUG режиме
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.exception(f"Детали исключения для {fnsi_oid}")
+        logger.error(f"Неожиданная ошибка при обновлении справочника {fnsi_oid}: {e}")
+        logger.exception(f"Детали исключения для {fnsi_oid}")
         return False, None
 
-if __name__ == '__main__':
-    logger.warning('This module is not for direct call')
+
+if __name__ == "__main__":
+    logger.warning("This module is not for direct call")
     exit(1)

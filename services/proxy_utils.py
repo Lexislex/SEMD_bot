@@ -1,12 +1,19 @@
 """
 Утилиты для работы с прокси-серверами.
 """
-from typing import Optional, Dict
-from config import get_config
 
 # Настройка логирования
 import logging
+from typing import Dict, Optional
+
+from config import get_config
+
 logger = logging.getLogger(__name__)
+
+
+def build_url(base_url: str, endpoint: str) -> str:
+    """Собирает URL без двойного слеша."""
+    return f"{base_url.rstrip('/')}/{endpoint.lstrip('/')}"
 
 
 def build_proxies(url: str = None) -> Optional[Dict[str, str]]:
@@ -26,7 +33,7 @@ def build_proxies(url: str = None) -> Optional[Dict[str, str]]:
         return None
 
     # Проверяем, что URL относится к nsi.rosminzdrav.ru
-    if url and 'nsi.rosminzdrav.ru' not in url:
+    if url and "nsi.rosminzdrav.ru" not in url:
         logger.debug(f"Прокси не используется для {url} (не nsi.rosminzdrav.ru)")
         return None
 
@@ -39,18 +46,22 @@ def build_proxies(url: str = None) -> Optional[Dict[str, str]]:
     if cfg.proxy.user and cfg.proxy.password:
         proxy_auth = f"{cfg.proxy.user}:{cfg.proxy.password}@"
 
-    proxy_url = f"{cfg.proxy.proxy_type}://{proxy_auth}{cfg.proxy.host}:{cfg.proxy.port}"
+    proxy_url = (
+        f"{cfg.proxy.proxy_type}://{proxy_auth}{cfg.proxy.host}:{cfg.proxy.port}"
+    )
 
     # Возвращаем словарь для http и https
     proxies = {
-        'http': proxy_url,
-        'https': proxy_url,
+        "http": proxy_url,
+        "https": proxy_url,
     }
 
-    logger.info(f"Используется прокси для nsi.rosminzdrav.ru: {cfg.proxy.proxy_type}://{cfg.proxy.host}:{cfg.proxy.port}")
+    logger.info(
+        f"Используется прокси для nsi.rosminzdrav.ru: {cfg.proxy.proxy_type}://{cfg.proxy.host}:{cfg.proxy.port}"
+    )
     return proxies
 
 
-if __name__ == '__main__':
-    logger.warning('This module is not for direct call')
+if __name__ == "__main__":
+    logger.warning("This module is not for direct call")
     exit(1)

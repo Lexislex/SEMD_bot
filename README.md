@@ -16,6 +16,9 @@ SEMD Bot - это продвинутый Telegram-бот для монитори
 # Установка зависимостей
 poetry install
 
+# Получение сертификата Минздрава для FNSI API
+poetry run python scripts/fetch_fnsi_cert.py
+
 # Очистка базы данных (если требуется)
 poetry run python scripts/database/clean_all_db.py --backup
 
@@ -286,6 +289,9 @@ poetry run python scripts/testing/test_architecture.py
 ### Обязательные переменные
 
 ```env
+# Сертификат Минздрава для FNSI API (получить/обновить: poetry run python scripts/fetch_fnsi_cert.py)
+# Ожидается по пути env/crts/rosminzdrav.crt
+
 # Telegram Bot API (получите от @BotFather на Telegram)
 BOT_TOKEN=your_telegram_bot_token
 
