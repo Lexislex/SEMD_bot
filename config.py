@@ -91,7 +91,13 @@ _CONFIG: Optional[Config] = None
 
 def _read_env(name: str, default: Optional[str] = None) -> Optional[str]:
     val = os.getenv(name)
-    return val if val is not None and val != "" else default
+    if val is None or val == "":
+        return default
+    # Убираем окружающие пробелы и кавычки, которые часто оставляют в .env
+    val = val.strip()
+    if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
+        val = val[1:-1]
+    return val if val != "" else default
 
 
 def get_config() -> Config:
