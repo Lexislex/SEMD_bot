@@ -115,7 +115,9 @@ class NSIUpdHandlers:
         Проверяет справочники параллельно в нескольких потоках,
         чтобы уменьшить общее время цикла при нестабильном соединении с ФНСИ.
         """
-        max_workers = min(8, len(NSI_LIST))
+        # FNSI плохо справляется с большим числом параллельных запросов
+        # с одного IP. 3 потока — баланс между скоростью и стабильностью.
+        max_workers = min(3, len(NSI_LIST))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
                 executor.submit(self._check_single_dictionary, nsi_oid): nsi_oid

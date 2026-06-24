@@ -15,7 +15,7 @@ from services.proxy_utils import build_proxies, build_url
 logger = logging.getLogger(__name__)
 
 # Параметры повторных попыток запросов к ФНСИ
-FNSI_REQUEST_TIMEOUT = 15  # секунд на одну попытку
+FNSI_REQUEST_TIMEOUT = 30  # секунд на одну попытку
 FNSI_MAX_RETRIES = 3
 FNSI_RETRY_DELAY = 2  # секунд между попытками
 
