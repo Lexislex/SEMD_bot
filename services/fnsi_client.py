@@ -1,6 +1,7 @@
 # Настройка логирования
 import logging
 from datetime import datetime
+from time import sleep
 from typing import Dict, Optional, Tuple
 
 import dateutil.parser as parser
@@ -13,10 +14,10 @@ from services.proxy_utils import build_proxies, build_url
 
 logger = logging.getLogger(__name__)
 
-
-def _build_fnsi_url(base_url: str, endpoint: str) -> str:
-    """Собирает URL без двойного слеша."""
-    return f"{base_url.rstrip('/')}/{endpoint.lstrip('/')}"
+# Параметры повторных попыток запросов к ФНСИ
+FNSI_REQUEST_TIMEOUT = 15  # секунд на одну попытку
+FNSI_MAX_RETRIES = 3
+FNSI_RETRY_DELAY = 2  # секунд между попытками
 
 
 def get_version(nsi: str, ver: str = "latest") -> dict:
@@ -62,34 +63,65 @@ def get_version(nsi: str, ver: str = "latest") -> dict:
     # Получаем настройки прокси для данного URL
     proxies = build_proxies(url)
 
-    try:
-        response = session.get(
-            url,
-            headers=headers,
-            verify=str(cfg.paths.mzrf_cert_path),
-            timeout=30,  # Таймаут 30 секунд
-            proxies=proxies,  # Добавляем прокси
+    last_error = None
+    for attempt in range(1, FNSI_MAX_RETRIES + 1):
+        try:
+            response = session.get(
+                url,
+                headers=headers,
+                verify=str(cfg.paths.mzrf_cert_path),
+                timeout=FNSI_REQUEST_TIMEOUT,
+                proxies=proxies,
+            )
+            response.raise_for_status()
+            logger.debug(f"Успешно получен ответ от ФНСИ для справочника {nsi}")
+            break
+
+        except requests.exceptions.Timeout as e:
+            last_error = e
+            logger.warning(
+                f"Таймаут запроса к ФНСИ для справочника {nsi} (попытка {attempt}/{FNSI_MAX_RETRIES})"
+            )
+            if attempt < FNSI_MAX_RETRIES:
+                sleep(FNSI_RETRY_DELAY * attempt)
+
+        except requests.exceptions.SSLError as e:
+            error_msg = f"SSL ошибка при запросе к ФНСИ для справочника {nsi}: {e}"
+            logger.error(error_msg)
+            raise ConnectionError(error_msg)
+
+        except requests.exceptions.ConnectionError as e:
+            last_error = e
+            logger.warning(
+                f"Ошибка соединения с ФНСИ для справочника {nsi} (попытка {attempt}/{FNSI_MAX_RETRIES}): {e}"
+            )
+            if attempt < FNSI_MAX_RETRIES:
+                sleep(FNSI_RETRY_DELAY * attempt)
+
+        except requests.exceptions.HTTPError as e:
+            # 5xx ошибки ФНСИ часто временные — пробуем ещё раз
+            status_code = e.response.status_code if e.response is not None else 0
+            last_error = e
+            if 500 <= status_code < 600 and attempt < FNSI_MAX_RETRIES:
+                logger.warning(
+                    f"HTTP {status_code} от ФНСИ для справочника {nsi} (попытка {attempt}/{FNSI_MAX_RETRIES})"
+                )
+                sleep(FNSI_RETRY_DELAY * attempt)
+            else:
+                error_msg = f"Ошибка запроса к ФНСИ для {nsi}: {e}"
+                logger.error(error_msg)
+                raise ConnectionError(error_msg)
+
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Ошибка запроса к ФНСИ для {nsi}: {e}"
+            logger.error(error_msg)
+            raise ConnectionError(error_msg)
+    else:
+        # Все попытки исчерпаны
+        error_msg = (
+            f"Не удалось получить ответ от ФНСИ для справочника {nsi} "
+            f"после {FNSI_MAX_RETRIES} попыток: {last_error}"
         )
-        response.raise_for_status()  # Проверка HTTP статуса
-        logger.debug(f"Успешно получен ответ от ФНСИ для справочника {nsi}")
-
-    except requests.exceptions.Timeout:
-        error_msg = f"Таймаут запроса к ФНСИ для справочника {nsi}"
-        logger.debug(f"Timeout при запросе к ФНСИ: {nsi}")
-        raise ConnectionError(error_msg)
-
-    except requests.exceptions.SSLError as e:
-        error_msg = f"SSL ошибка при запросе к ФНСИ для справочника {nsi}: {e}"
-        logger.error(error_msg)
-        raise ConnectionError(error_msg)
-
-    except requests.exceptions.ConnectionError:
-        error_msg = f"Ошибка соединения с ФНСИ для справочника {nsi}"
-        logger.debug(f"Connection error при запросе к ФНСИ: {nsi}")
-        raise ConnectionError(error_msg)
-
-    except requests.exceptions.RequestException as e:
-        error_msg = f"Ошибка запроса к ФНСИ для {nsi}: {e}"
         logger.error(error_msg)
         raise ConnectionError(error_msg)
 
