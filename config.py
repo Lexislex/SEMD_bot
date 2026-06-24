@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 from dotenv import load_dotenv
 
@@ -35,6 +35,10 @@ class AppConfig:
     env: str
     log_level: str
     service_unit_path: Path  # например, для systemd unit-файла (если используется)
+    telegram_api_base_url: Optional[
+        str
+    ]  # кастомный reverse-proxy endpoint для Telegram API
+
 
 @dataclass(frozen=True)
 class AccountsConfig:
@@ -52,6 +56,7 @@ class PathsConfig:
     fnsi_db_path: Path
     mzrf_cert_path: Path
 
+
 @dataclass(frozen=True)
 class ExternalAPIsConfig:
     # Секреты и токены — только из .env
@@ -59,6 +64,7 @@ class ExternalAPIsConfig:
     fnsi_api_key: Optional[str]
     fnsi_files_url: Optional[str]
     # добавляйте другие интеграции по мере роста
+
 
 @dataclass(frozen=True)
 class ProxyConfig:
@@ -69,6 +75,7 @@ class ProxyConfig:
     user: Optional[str]
     password: Optional[str]
 
+
 @dataclass(frozen=True)
 class Config:
     app: AppConfig
@@ -76,6 +83,7 @@ class Config:
     paths: PathsConfig
     apis: ExternalAPIsConfig
     proxy: ProxyConfig
+
 
 # Кеш конфигурации, чтобы не читать .env многократно
 _CONFIG: Optional[Config] = None
@@ -110,16 +118,23 @@ def get_config() -> Config:
     proxy_user = _read_env("PROXY_USER")
     proxy_pass = _read_env("PROXY_PASS")
 
+    telegram_api_base_url = _read_env("TELEGRAM_API_BASE_URL")
+
     app_cfg = AppConfig(
         bot_token=bot_token,
         env=env,
         log_level=log_level,
         service_unit_path=PROJECT_ROOT / "env" / "SEMD_bot.service",
+        telegram_api_base_url=telegram_api_base_url,
     )
 
     accounts_cfg = AccountsConfig(
-        admin_ids = [int(id.strip()) for id in _read_env("ADMIN_ID").split(",")],
-        updates_mailing_list = [int(id.strip()) for id in _read_env("UPDS_MAILING_LIST", "").split(",") if id.strip()],
+        admin_ids=[int(id.strip()) for id in _read_env("ADMIN_ID").split(",")],
+        updates_mailing_list=[
+            int(id.strip())
+            for id in _read_env("UPDS_MAILING_LIST", "").split(",")
+            if id.strip()
+        ],
     )
 
     paths_cfg = PathsConfig(
