@@ -63,6 +63,10 @@ class ExternalAPIsConfig:
     fnsi_api_url: Optional[str]
     fnsi_api_key: Optional[str]
     fnsi_files_url: Optional[str]
+    # Таймаут одного запроса к ФНСИ (сек)
+    fnsi_request_timeout: int
+    # Количество повторных попыток при таймаутах/5xx ФНСИ
+    fnsi_max_retries: int
     # добавляйте другие интеграции по мере роста
 
 
@@ -115,6 +119,18 @@ def get_config() -> Config:
     fnsi_files_url = _read_env("FNSI_FILES_URL")
     fnsi_api_key = _read_env("FNSI_API_KEY")
 
+    _fnsi_timeout_str = _read_env("FNSI_REQUEST_TIMEOUT", "60")
+    try:
+        fnsi_request_timeout = max(5, int(_fnsi_timeout_str))
+    except ValueError:
+        fnsi_request_timeout = 60
+
+    _fnsi_retries_str = _read_env("FNSI_MAX_RETRIES", "3")
+    try:
+        fnsi_max_retries = max(1, int(_fnsi_retries_str))
+    except ValueError:
+        fnsi_max_retries = 3
+
     # Настройки прокси
     proxy_enabled = _read_env("PROXY_ENABLED", "false").lower() in ("true", "1", "yes")
     proxy_type = _read_env("PROXY_TYPE", "http")
@@ -157,6 +173,8 @@ def get_config() -> Config:
         fnsi_api_url=fnsi_api_url,
         fnsi_files_url=fnsi_files_url,
         fnsi_api_key=fnsi_api_key,
+        fnsi_request_timeout=fnsi_request_timeout,
+        fnsi_max_retries=fnsi_max_retries,
     )
 
     proxy_cfg = ProxyConfig(

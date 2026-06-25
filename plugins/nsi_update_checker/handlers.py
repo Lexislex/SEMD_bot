@@ -1,4 +1,5 @@
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from telebot import apihelper
@@ -116,13 +117,18 @@ class NSIUpdHandlers:
         чтобы уменьшить общее время цикла при нестабильном соединении с ФНСИ.
         """
         # FNSI плохо справляется с большим числом параллельных запросов
-        # с одного IP. 3 потока — баланс между скоростью и стабильностью.
-        max_workers = min(3, len(NSI_LIST))
+        # с одного IP. 2 потока + небольшая рассылка запусков снижает
+        # вероятность получения таймаутов со стороны сервера.
+        max_workers = min(2, len(NSI_LIST))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {
-                executor.submit(self._check_single_dictionary, nsi_oid): nsi_oid
-                for nsi_oid in NSI_LIST
-            }
+            futures = {}
+            for nsi_oid in NSI_LIST:
+                futures[
+                    executor.submit(self._check_single_dictionary, nsi_oid)
+                ] = nsi_oid
+                # Небольшая задержка между постановкой задач в очередь,
+                # чтобы не атаковать ФНСИ пачкой одновременных запросов.
+                time.sleep(0.3)
             for future in as_completed(futures):
                 nsi_oid = futures[future]
                 try:
