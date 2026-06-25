@@ -91,7 +91,6 @@ class SEMDBotCore:
                 self.bot.infinity_polling(
                     timeout=_TELEGRAM_POLL_TIMEOUT,
                     long_polling_timeout=_TELEGRAM_LONG_POLLING_TIMEOUT,
-                    non_stop=True,
                 )
                 reconnect_attempt = 0
             except (requests.exceptions.RequestException, telebot.apihelper.ApiException) as e:
