@@ -1,6 +1,9 @@
 import logging
+import random
+import time
 from threading import Thread
 
+import requests
 import telebot
 import telebot.apihelper as apihelper
 
@@ -8,6 +11,12 @@ from core.plugin_manager import PluginManager
 from core.scheduler import TaskScheduler
 
 logger = logging.getLogger(__name__)
+
+# Параметры переподключения к Telegram API при сетевых сбоях
+_TELEGRAM_POLL_TIMEOUT = 30  # timeout для каждого getUpdates
+_TELEGRAM_LONG_POLLING_TIMEOUT = 120  # long_polling_timeout
+_TELEGRAM_RECONNECT_DELAY_BASE = 5  # базовая задержка перед переподключением
+_TELEGRAM_RECONNECT_DELAY_MAX = 60  # максимальная задержка перед переподключением
 
 
 class SEMDBotCore:
@@ -17,6 +26,7 @@ class SEMDBotCore:
         self.bot = telebot.TeleBot(config.app.bot_token)
         self.plugin_manager = PluginManager(self.bot, config)
         self.scheduler = TaskScheduler(config)
+        self._running = True
 
     @staticmethod
     def _apply_telegram_api_settings(config):
@@ -67,9 +77,45 @@ class SEMDBotCore:
 
         Thread(target=self.scheduler.start, daemon=True).start()
 
-        # Запускаем бота
-        self.bot.infinity_polling()
+        # Запускаем бота с защитой от сетевых сбоев.
+        # infinity_polling прерывается при необрабатываемых исключениях связи,
+        # поэтому перезапускаем его в цикле с нарастающей задержкой.
+        reconnect_attempt = 0
+        while self._running:
+            try:
+                logger.info(
+                    "Запуск Telegram polling "
+                    f"(poll_timeout={_TELEGRAM_POLL_TIMEOUT}s, "
+                    f"long_polling_timeout={_TELEGRAM_LONG_POLLING_TIMEOUT}s)"
+                )
+                self.bot.infinity_polling(
+                    timeout=_TELEGRAM_POLL_TIMEOUT,
+                    long_polling_timeout=_TELEGRAM_LONG_POLLING_TIMEOUT,
+                    non_stop=True,
+                )
+                reconnect_attempt = 0
+            except (requests.exceptions.RequestException, telebot.apihelper.ApiException) as e:
+                reconnect_attempt += 1
+                delay = min(
+                    _TELEGRAM_RECONNECT_DELAY_BASE * (2 ** (reconnect_attempt - 1)),
+                    _TELEGRAM_RECONNECT_DELAY_MAX,
+                ) + random.uniform(0, 2)
+                logger.warning(
+                    f"Сбой связи с Telegram API (попытка {reconnect_attempt}): {e}. "
+                    f"Переподключение через {delay:.1f} сек..."
+                )
+                time.sleep(delay)
+            except Exception as e:
+                logger.error(f"Неожиданная ошибка в polling: {e}", exc_info=True)
+                reconnect_attempt += 1
+                delay = min(
+                    _TELEGRAM_RECONNECT_DELAY_BASE * (2 ** (reconnect_attempt - 1)),
+                    _TELEGRAM_RECONNECT_DELAY_MAX,
+                ) + random.uniform(0, 2)
+                logger.warning(f"Перезапуск polling через {delay:.1f} сек...")
+                time.sleep(delay)
 
     def shutdown(self):
+        self._running = False
         self.plugin_manager.shutdown_all()
         self.scheduler.stop()
