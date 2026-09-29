@@ -1,6 +1,5 @@
 # Настройка логирования
 import logging
-import random
 from datetime import datetime
 from time import sleep
 from typing import Dict, Optional, Tuple
@@ -11,6 +10,7 @@ from config import get_config
 from plugins.semd_checker.semd_logic import SEMDVersionFetcher
 from services.database_service import add_nsi_passport
 from services.proxy_utils import build_proxies, build_url
+from utils.retry import backoff_delay
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +18,6 @@ logger = logging.getLogger(__name__)
 _DEFAULT_FNSI_REQUEST_TIMEOUT = 60  # секунд на одну попытку
 _DEFAULT_FNSI_MAX_RETRIES = 3
 _DEFAULT_FNSI_RETRY_DELAY = 2  # базовая задержка между попытками
-
-
-def _backoff_delay(attempt: int) -> float:
-    """Экспоненциальный backoff с небольшим jitter для снижения нагрузки на ФНСИ."""
-    base = _DEFAULT_FNSI_RETRY_DELAY * (2 ** (attempt - 1))
-    # Ограничиваем максимальную задержку 30 секундами и добавляем jitter до 1 сек
-    return min(base, 30) + random.uniform(0, 1)
 
 
 def get_version(nsi: str, ver: str = "latest") -> dict:
@@ -93,7 +86,7 @@ def get_version(nsi: str, ver: str = "latest") -> dict:
                 f"Таймаут запроса к ФНСИ для справочника {nsi} (попытка {attempt}/{max_retries})"
             )
             if attempt < max_retries:
-                sleep(_backoff_delay(attempt))
+                sleep(backoff_delay(attempt, _DEFAULT_FNSI_RETRY_DELAY))
 
         except requests.exceptions.SSLError as e:
             error_msg = f"SSL ошибка при запросе к ФНСИ для справочника {nsi}: {e}"
@@ -106,7 +99,7 @@ def get_version(nsi: str, ver: str = "latest") -> dict:
                 f"Ошибка соединения с ФНСИ для справочника {nsi} (попытка {attempt}/{max_retries}): {e}"
             )
             if attempt < max_retries:
-                sleep(_backoff_delay(attempt))
+                sleep(backoff_delay(attempt, _DEFAULT_FNSI_RETRY_DELAY))
 
         except requests.exceptions.HTTPError as e:
             # 5xx ошибки ФНСИ часто временные — пробуем ещё раз
@@ -116,7 +109,7 @@ def get_version(nsi: str, ver: str = "latest") -> dict:
                 logger.warning(
                     f"HTTP {status_code} от ФНСИ для справочника {nsi} (попытка {attempt}/{max_retries})"
                 )
-                sleep(_backoff_delay(attempt))
+                sleep(backoff_delay(attempt, _DEFAULT_FNSI_RETRY_DELAY))
             else:
                 error_msg = f"Ошибка запроса к ФНСИ для {nsi}: {e}"
                 logger.error(error_msg)
