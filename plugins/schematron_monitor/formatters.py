@@ -71,9 +71,8 @@ def _format_commit_line(change: SchematronChange, commit: Dict, client) -> str:
         f"<a href='{escape(client.commit_url(change.repo, sha))}'>{escape(short)}</a>"
     )
     date = _format_date(commit.get("committed_date"))
-    author = escape(commit.get("author_name") or "")
     title = escape(commit.get("title") or "")
-    return f"• {link} {date}, {author}: {title}"
+    return f"• {link} {date}: {title}"
 
 
 def _format_commits(change: SchematronChange, client) -> List[str]:
@@ -167,6 +166,7 @@ def with_inline_diff(message: str, change: SchematronChange) -> str:
         return message
     # Вставляем diff перед хэштегами, чтобы они оставались последней строкой
     body, sep, hashtags = message.rpartition("\n\n#")
-    pre = f"<pre>{escape(diff_body)}</pre>"
+    # Свёрнутая цитата: diff раскрывается по нажатию
+    pre = f"<blockquote expandable><pre>{escape(diff_body)}</pre></blockquote>"
     candidate = f"{body}\n\n{pre}{sep}{hashtags}" if sep else f"{message}\n\n{pre}"
     return candidate if len(candidate) <= TELEGRAM_MESSAGE_LIMIT else message

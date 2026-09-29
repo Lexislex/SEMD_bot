@@ -279,10 +279,11 @@ class TestFormatters:
         assert "(+1 / −1)" in text
         assert "/-/compare/" in text
         assert text.endswith("#схематрон #СЭМД_331")
+        assert "Автор" not in text
 
     def test_inline_diff_before_hashtags(self, change, client):
         text = with_inline_diff(format_change_message(change, client), change)
-        assert "<pre>" in text
+        assert "<blockquote expandable><pre>" in text
         assert "&lt;assert test=&quot;b&quot;/&gt;" in text
         assert text.index("<pre>") < text.index("#схематрон")
 
