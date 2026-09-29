@@ -2,9 +2,11 @@
 Schematron change detection for SEMD packages in the Minzdrav GitLab.
 
 Algorithm per SEMD:
-    1. Resolve GIT_LINK from dictionary 1520 -> SemdRepo (project + branch).
+    1. Take the package OID (GIT_LINK) from dictionary 1520 and resolve it to
+       a SemdRepo (project + branch) via the GitLab URL of dictionary 638;
+       fall back to the OID heuristic if the package is missing from 638.
     2. Ask GitLab for the latest commit on the branch touching ``schematron/``.
-    3. First run (or GIT_LINK changed): store it as baseline, no notification.
+    3. First run (or resolved repo changed): store it as baseline, no notification.
     4. New commit: compare stored sha with it, keep only ``schematron/*.sch``
        diffs and notify. The stored sha is advanced only after notify succeeds.
     5. Stored sha vanished (force-push): notify about rewritten history and
@@ -84,7 +86,23 @@ class SchematronChange:
 
 
 SemdLookup = Callable[[str], Optional[Dict]]
+# package OID (GIT_LINK of 1520) -> GitLab URL from dictionary 638
+PackageLookup = Callable[[str], Optional[str]]
 Notifier = Callable[[SchematronChange], None]
+
+
+def stored_repo_key(stored_git_link: Optional[str]) -> Optional[str]:
+    """Repo key of a stored WatchState.git_link.
+
+    Older rows keep the raw package OID instead of ``project_path@ref``;
+    they are interpreted with the heuristic that was used to check them.
+    """
+    if not stored_git_link or "@" in stored_git_link:
+        return stored_git_link
+    try:
+        return SemdRepo.from_git_link(stored_git_link).key
+    except ValueError:
+        return stored_git_link
 
 
 class SchematronMonitor:
@@ -96,11 +114,13 @@ class SchematronMonitor:
         store: SchematronStore,
         semd_lookup: SemdLookup,
         notify: Notifier,
+        package_lookup: Optional[PackageLookup] = None,
     ):
         self.client = client
         self.store = store
         self.semd_lookup = semd_lookup
         self.notify = notify
+        self.package_lookup = package_lookup
 
     def check_all(self, semd_oids: Iterable[str]) -> List[SchematronChange]:
         """Check every SEMD; one failing repository does not stop the others.
@@ -149,17 +169,18 @@ class SchematronMonitor:
             return None
 
         try:
-            repo = SemdRepo.from_git_link(git_link)
+            repo = self._resolve_repo(semd_oid, git_link)
         except ValueError as e:
             self._save_status(semd_oid, prev, STATUS_ERROR)
             logger.warning(f"СЭМД {semd_oid}: {e}")
             return None
 
-        # Если GIT_LINK сменился, старый sha относится к другой ветке — начинаем заново
-        same_repo = prev is not None and prev.git_link == git_link
+        # Если репозиторий/ветка сменились, старый sha относится к другой ветке —
+        # начинаем заново
+        same_repo = prev is not None and stored_repo_key(prev.git_link) == repo.key
         state = WatchState(
             semd_oid=semd_oid,
-            git_link=git_link,
+            git_link=repo.key,
             last_sha=prev.last_sha if same_repo else None,
             last_changed=prev.last_changed if same_repo else None,
         )
@@ -221,6 +242,25 @@ class SchematronMonitor:
             f"СЭМД {semd_oid}: схематрон изменён {change.from_sha[:8]}..{head_sha[:8]}"
         )
         return change
+
+    def _resolve_repo(self, semd_oid: str, git_link: str) -> SemdRepo:
+        """Package OID -> SemdRepo: dictionary 638 first, heuristic as fallback.
+
+        Raises:
+            ValueError: the heuristic cannot parse ``git_link`` either.
+        """
+        url = None
+        if self.package_lookup is not None:
+            try:
+                url = self.package_lookup(git_link)
+            except Exception as e:
+                logger.warning(f"СЭМД {semd_oid}: ошибка поиска пакета в 638: {e}")
+        if url:
+            try:
+                return SemdRepo.from_url(url, git_link)
+            except ValueError as e:
+                logger.warning(f"СЭМД {semd_oid}: {e}, используем эвристику")
+        return SemdRepo.from_git_link(git_link)
 
     def _build_change(
         self, semd_oid: str, info: Dict, repo: SemdRepo, from_sha: str, head: Dict
