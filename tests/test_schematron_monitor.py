@@ -377,9 +377,11 @@ class TestFormatters:
 
     def test_inline_diff_before_hashtags(self, change, client):
         text = with_inline_diff(format_change_message(change, client), change)
-        assert "<blockquote expandable><pre>" in text
+        # <pre> внутри свёрнутой цитаты мобильные клиенты не сворачивают
+        assert "<blockquote expandable><code>" in text
+        assert "<pre>" not in text
         assert "&lt;assert test=&quot;b&quot;/&gt;" in text
-        assert text.index("<pre>") < text.index("#схематрон")
+        assert text.index("<blockquote") < text.index("#схематрон")
 
     def test_inline_diff_skipped_when_long(self, change, client):
         change.diffs = [dict(SCH_DIFF, diff="+x\n" * 2000)]

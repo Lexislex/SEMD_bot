@@ -191,6 +191,18 @@ def diff_file_name(change: SchematronChange) -> str:
     )
 
 
+def _collapsed_code(text: str) -> str:
+    """Collapsed quote with monospace lines.
+
+    <pre> inside <blockquote expandable> is not collapsed by mobile Telegram
+    clients, so every line is wrapped in <code> instead.
+    """
+    lines = [
+        f"<code>{escape(line)}</code>" if line else "" for line in text.splitlines()
+    ]
+    return "<blockquote expandable>" + "\n".join(lines) + "</blockquote>"
+
+
 def with_inline_diff(message: str, change: SchematronChange) -> str:
     """Append a short diff to the message if it fits into one Telegram message."""
     if (
@@ -204,7 +216,6 @@ def with_inline_diff(message: str, change: SchematronChange) -> str:
         return message
     # Вставляем diff перед хэштегами, чтобы они оставались последней строкой
     body, sep, hashtags = message.rpartition("\n\n#")
-    # Свёрнутая цитата: diff раскрывается по нажатию
-    pre = f"<blockquote expandable><pre>{escape(diff_body)}</pre></blockquote>"
-    candidate = f"{body}\n\n{pre}{sep}{hashtags}" if sep else f"{message}\n\n{pre}"
+    quote = _collapsed_code(diff_body)
+    candidate = f"{body}\n\n{quote}{sep}{hashtags}" if sep else f"{message}\n\n{quote}"
     return candidate if tg_length(candidate) <= SAFE_MESSAGE_LIMIT else message
