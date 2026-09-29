@@ -1,8 +1,10 @@
-import schedule
-import time
-from typing import Dict, List, Any, Optional
+import functools
 import logging
+import time
 from datetime import datetime
+from typing import Callable, Optional
+
+import schedule
 
 
 class TaskScheduler:
@@ -11,8 +13,31 @@ class TaskScheduler:
         self.logger = logging.getLogger(__name__)
         self.running = False
         self.tasks = {}
-    
-    def add_task(self, func, interval: int, unit: str, at: Optional[str] = None, task_name: Optional[str] = None):
+
+    def _safe(self, func: Callable, task_id: str) -> Callable:
+        """Wrap a task so an exception is logged instead of killing the scheduler.
+
+        ``schedule.run_pending()`` propagates exceptions from jobs; the scheduler
+        runs in a daemon thread, so one failure would silently stop every task.
+        """
+
+        @functools.wraps(func)
+        def wrapper():
+            try:
+                return func()
+            except Exception as e:
+                self.logger.exception(f"Ошибка при выполнении задачи {task_id}: {e}")
+
+        return wrapper
+
+    def add_task(
+        self,
+        func,
+        interval: int,
+        unit: str,
+        at: Optional[str] = None,
+        task_name: Optional[str] = None,
+    ):
         """
         Добавляет задачу в планировщик
 
@@ -20,70 +45,70 @@ class TaskScheduler:
             func: Функция для выполнения
             interval: Интервал выполнения
             unit: Единица времени ('minutes', 'seconds', 'hours', 'days', 'months', 'quarters')
-            at: Время выполнения в формате "HH:MM" (опционально)
+            at: Время выполнения в формате "HH:MM" (опционально, для days/months/quarters)
             task_name: Имя задачи для идентификации (опционально)
         """
         task_id = task_name or func.__name__
 
         try:
-            # Регистрируем в schedule библиотеке
-            if unit == 'minutes':
-                job = schedule.every(interval).minutes.do(func)
-            elif unit == 'seconds':
-                job = schedule.every(interval).seconds.do(func)
-            elif unit == 'hours':
-                job = schedule.every(interval).hours.do(func)
-            elif unit == 'days':
-                job = schedule.every(interval).days.do(func)
-                # Поддержка параметра at для дневного расписания
-                if at:
-                    job.at(at)
-            elif unit == 'months':
-                # Для месячного расписания используем кастомную логику
-                # schedule не поддерживает месячные интервалы, поэтому используем дневной интервал
-                # с проверкой внутри функции
-                job = schedule.every().day.do(func)
-                if at:
-                    job.at(at)
-                self.logger.info(f"Задача {task_id} добавлена: ежемесячно в {at or 'любое время'} (проверка через день)")
-            elif unit == 'quarters':
-                # Для квартального расписания используем кастомную логику
-                # schedule не поддерживает квартальные интервалы, поэтому используем дневной интервал
-                # с проверкой внутри функции
-                job = schedule.every().day.do(func)
-                if at:
-                    job.at(at)
-                self.logger.info(f"Задача {task_id} добавлена: ежеквартально в {at or 'любое время'} (проверка через день)")
+            if unit == "minutes":
+                job = schedule.every(interval).minutes
+            elif unit == "seconds":
+                job = schedule.every(interval).seconds
+            elif unit == "hours":
+                job = schedule.every(interval).hours
+            elif unit == "days":
+                job = schedule.every(interval).days
+            elif unit in ("months", "quarters"):
+                # schedule не поддерживает месяцы/кварталы: запускаем ежедневно,
+                # нужный день проверяет сама задача
+                if interval != 1:
+                    self.logger.warning(
+                        f"Задача {task_id}: interval={interval} для {unit} "
+                        f"не поддерживается, используется 1"
+                    )
+                job = schedule.every().day
             else:
                 self.logger.error(f"Неизвестная единица времени: {unit}")
                 return
 
+            # at() до do(): иначе первый запуск считается от момента старта,
+            # а не от указанного времени
+            if at and unit in ("days", "months", "quarters"):
+                job = job.at(at)
+            job.do(self._safe(func, task_id)).tag(task_id)
+
             self.tasks[task_id] = func
 
-            # Логирование
-            if unit not in ['months', 'quarters']:
+            if unit == "months":
+                log_msg = f"Задача {task_id} добавлена: ежемесячно (проверка ежедневно)"
+            elif unit == "quarters":
+                log_msg = (
+                    f"Задача {task_id} добавлена: ежеквартально (проверка ежедневно)"
+                )
+            else:
                 log_msg = f"Задача {task_id} добавлена: каждые {interval} {unit}"
-                if at and unit in ['days', 'hours']:
-                    log_msg += f" в {at}"
-                self.logger.info(log_msg)
+            if at and unit in ("days", "months", "quarters"):
+                log_msg += f" в {at}"
+            self.logger.info(log_msg)
 
         except Exception as e:
             self.logger.error(f"Ошибка при добавлении задачи {task_id}: {e}")
-    
+
     def start(self):
         """Запускает планировщик"""
         self.running = True
         self.logger.info("TaskScheduler запущен")
-        
+
         while self.running:
             schedule.run_pending()  # Выполняет func() если пришло время
             time.sleep(1)
-    
+
     def stop(self):
         """Останавливает планировщик"""
         self.running = False
         self.logger.info("TaskScheduler остановлен")
-    
+
     def remove_task(self, task_id: str):
         """Удаляет задачу"""
         if task_id in self.tasks:
