@@ -22,7 +22,7 @@ core = SEMDBotCore(cfg)
 if __name__ == "__main__":
     try:
         logger.info("=" * 50)
-        logger.info("Запуск SEMD Bot v2.0 (Полностью модульная архитектура)")
+        logger.info("Запуск SEMD Bot")
         logger.info("=" * 50)
 
         # Загружаем плагины в правильном порядке
