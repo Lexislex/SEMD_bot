@@ -13,29 +13,29 @@
 ───────────────────────────────────────────────────────────────
 
 # Только FNSI база
-poetry run python clean_fnsi_db.py --info
+uv run python clean_fnsi_db.py --info
 
 # Все базы
-poetry run python clean_all_db.py --info
+uv run python clean_all_db.py --info
 
 ───────────────────────────────────────────────────────────────
 🧹 ОЧИСТКА (ТРЕБУЕТ ПОДТВЕРЖДЕНИЯ)
 ───────────────────────────────────────────────────────────────
 
 # Удалить FNSI базу
-poetry run python clean_fnsi_db.py
+uv run python clean_fnsi_db.py
 
 # Удалить FNSI базу с резервной копией
-poetry run python clean_fnsi_db.py --backup
+uv run python clean_fnsi_db.py --backup
 
 # Удалить FNSI базу, сохранив схему
-poetry run python clean_fnsi_db.py --keep-schema
+uv run python clean_fnsi_db.py --keep-schema
 
 # Удалить ВСЕ базы
-poetry run python clean_all_db.py
+uv run python clean_all_db.py
 
 # Удалить ВСЕ базы с резервной копией
-poetry run python clean_all_db.py --backup
+uv run python clean_all_db.py --backup
 
 ───────────────────────────────────────────────────────────────
 ⚡ БЫСТРАЯ ОЧИСТКА (БЕЗ ПОДТВЕРЖДЕНИЯ)
@@ -52,13 +52,13 @@ bash clean_fnsi_db_quick.sh
 ───────────────────────────────────────────────────────────────
 
 1️⃣  Посмотреть размер БД:
-   poetry run python clean_all_db.py --info
+   uv run python clean_all_db.py --info
 
 2️⃣  Создать резервные копии и удалить:
-   poetry run python clean_all_db.py --backup
+   uv run python clean_all_db.py --backup
 
 3️⃣  Запустить бота (БД пересоздадутся):
-   poetry run python main.py
+   uv run python main.py
 
 ───────────────────────────────────────────────────────────────
 🛡️  РЕЗЕРВНЫЕ КОПИИ

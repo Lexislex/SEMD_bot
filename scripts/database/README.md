@@ -18,16 +18,16 @@
 **Команды:**
 ```bash
 # Информация о базе
-poetry run python clean_fnsi_db.py --info
+uv run python clean_fnsi_db.py --info
 
 # Удалить базу целиком
-poetry run python clean_fnsi_db.py
+uv run python clean_fnsi_db.py
 
 # С резервной копией
-poetry run python clean_fnsi_db.py --backup
+uv run python clean_fnsi_db.py --backup
 
 # Сохранить схему, удалить только данные
-poetry run python clean_fnsi_db.py --keep-schema
+uv run python clean_fnsi_db.py --keep-schema
 ```
 
 ### 2. `clean_all_db.py` — Очистка всех баз
@@ -37,13 +37,13 @@ poetry run python clean_fnsi_db.py --keep-schema
 **Команды:**
 ```bash
 # Информация
-poetry run python clean_all_db.py --info
+uv run python clean_all_db.py --info
 
 # Удалить обе базы
-poetry run python clean_all_db.py
+uv run python clean_all_db.py
 
 # С резервными копиями
-poetry run python clean_all_db.py --backup
+uv run python clean_all_db.py --backup
 ```
 
 ### 3. `clean_fnsi_db_quick.sh` — Быстрая очистка
@@ -68,29 +68,29 @@ bash clean_fnsi_db_quick.sh
 
 ```bash
 # 1. Посмотреть текущее состояние
-poetry run python clean_fnsi_db.py --info
+uv run python clean_fnsi_db.py --info
 
 # 2. Очистить
-poetry run python clean_fnsi_db.py
+uv run python clean_fnsi_db.py
 
 # 3. Запустить бота
-poetry run python main.py
+uv run python main.py
 ```
 
 ### Полное тестирование
 
 ```bash
 # 1. Информация
-poetry run python clean_all_db.py --info
+uv run python clean_all_db.py --info
 
 # 2. Резервная копия + удаление
-poetry run python clean_all_db.py --backup
+uv run python clean_all_db.py --backup
 
 # 3. Тест архитектуры
-poetry run python test_architecture.py
+uv run python test_architecture.py
 
 # 4. Запуск бота
-poetry run python main.py
+uv run python main.py
 ```
 
 ### CI/CD интеграция
@@ -100,13 +100,13 @@ poetry run python main.py
 ./scripts/database/clean_fnsi_db_quick.sh
 
 # Запустить тесты
-poetry run python test_architecture.py
+uv run python test_architecture.py
 ```
 
 ## ⚙️ Технические детали
 
 - **Python 3.8+** (используется встроенный sqlite3)
-- **Poetry** — для запуска (опционально, можно использовать python напрямую)
+- **uv** — для запуска (опционально, можно использовать python из `.venv` напрямую)
 - **Нет внешних зависимостей** — используются только стандартные модули
 
 ## 🛡️ Резервные копии

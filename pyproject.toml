@@ -18,15 +18,20 @@ dependencies = [
     "cachetools (>=6.2.4,<7.0.0)",
 ]
 
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
-
 [dependency-groups]
 dev = [
-    "pytest (>=8.4.2,<9.0.0)"
+    "pytest (>=8.4.2,<9.0.0)",
+    "ruff>=0.6",
+    "black>=24.0",
 ]
 
-[tool.poetry]
-package-mode = false
+[tool.uv]
+# Приложение, а не библиотека: uv не собирает и не устанавливает сам проект
+package = false
+
+[tool.black]
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+# scripts/testing/*.py — ручные скрипты, не pytest-тесты
+testpaths = ["tests"]

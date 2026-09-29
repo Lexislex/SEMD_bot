@@ -2,7 +2,7 @@
 Конфигурация справочников НСИ для мониторинга обновлений.
 
 Каждый справочник может иметь свои параметры:
-- style: стиль сообщения (critical, normal, minor)
+- style: стиль сообщения (important, normal, minor)
 - notify: отправлять ли уведомление
 - priority: приоритет (1 - высокий, 2 - средний, 3 - низкий)
 """
@@ -260,3 +260,8 @@ NSI_DICTIONARIES = {
 
 # Для обратной совместимости (если нужен просто список OID)
 NSI_LIST = list(NSI_DICTIONARIES.keys())
+
+
+def notified_count() -> int:
+    """Number of dictionaries whose updates are posted to the channel."""
+    return sum(1 for params in NSI_DICTIONARIES.values() if params.get("notify", True))

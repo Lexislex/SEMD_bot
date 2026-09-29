@@ -8,11 +8,17 @@ selected SEMD and posts a summary plus the diff to `UPDS_MAILING_LIST`.
 ## How it works
 
 1. **SEMD list**: `data.py` → `WATCHED_SEMD`, which holds OIDs from dictionary 1520 (column `OID`).
-2. **Repository lookup**: the `GIT_LINK` column of dictionary 1520 holds a package id
-   such as `1.2.643.5.1.13.13.15.33.4`:
-   - project: `semd/1.2.643.5.1.13.13.15.33` (the id without its last segment);
-   - branch: `1.2.643.5.1.13.13.15.33.4` (the full id, one branch per revision);
+2. **Repository lookup**: the `GIT_LINK` column of dictionary 1520 holds a package OID
+   such as `1.2.643.5.1.13.13.15.33.4`. The package is looked up in dictionary 638
+   (registry of SEMD implementation guides), whose `GIT_LINK` column holds the GitLab URL
+   `<base>/<project>/-/tree/<branch>` (sometimes `/-/blob/`):
+   - SEMD 113: package `…15.36.5` → project `semd/…15.35`, branch `…15.35.5`;
+   - if the package is missing from 638 (or 638 is not loaded yet), the project is guessed
+     as `semd/<OID without its last segment>` and the branch as the full OID;
    - schematron files: `schematron/*.sch`.
+
+   Dictionary 638 is monitored by the NSI Update Checker (`notify: False`), so new versions
+   land in `nsi_passport` and are reloaded automatically.
 3. **Change detection**: every cycle the plugin asks GitLab for the latest commit on the
    branch that touches `schematron/`. It makes one request per SEMD and compares
    the result with the SHA stored in `fnsi_data.sqlite` → `schematron_watch`.
@@ -27,7 +33,7 @@ selected SEMD and posts a summary plus the diff to `UPDS_MAILING_LIST`.
 
 | Situation | Behaviour |
 |---|---|
-| First check / `GIT_LINK` changed | Store the baseline SHA, no notification |
+| First check / resolved repository changed (`project@branch` in `schematron_watch.git_link`) | Store the baseline SHA, no notification |
 | Only non-schematron files changed | Advance the SHA silently |
 | Stored SHA vanished (force-push) | Notify "history rewritten", attach the current `schematron/*.sch` files in full, take the new baseline |
 | GitLab truncated the diff (`too_large` / `collapsed`) | Attach the new version of that file in full |

@@ -22,19 +22,18 @@ class SEMDRegistrationHandlers:
 
     def _load_semd_data(self) -> bool:
         """
-        Загружает справочник SEMD1520
+        Получает актуальные данные справочника SEMD1520 (общий экземпляр,
+        перезагружается при появлении новой версии в nsi_passport)
         OID = '1.2.643.5.1.13.13.11.1520'
         Возвращает True если успешно, False если ошибка
         """
         try:
-            from plugins.semd_checker.semd_logic import SEMD1520 #TODO сделать класс общим
+            from plugins.semd_checker.semd_logic import get_semd1520
 
-            # Загружаем справочник SEMD1520 через существующий класс
-            semd = SEMD1520()
+            df = get_semd1520().get_dataframe()
 
-            if semd.df is not None and not semd.df.empty:
-                # Используем DataFrame из SEMD1520
-                self.semd1520 = semd.df.copy()
+            if df is not None and not df.empty:
+                self.semd1520 = df
                 self.logger.info(f"Справочник SEMD1520 загружен: {len(self.semd1520)} записей")
                 return True
             else:
@@ -304,7 +303,7 @@ class SEMDRegistrationHandlers:
         """
         try:
             info_text = (
-                "📢 <b>Монитор регистрации СЭДМ в РЭМД</b>\n\n"
+                "📢 <b>Монитор регистрации СЭМД в РЭМД</b>\n\n"
                 "Информация о начале и окончании регистрации СЭМД "
                 "публикуется первого числа каждого месяца в канале:\n"
                 "<b>«СЭМД инфо»</b>\n\n"
