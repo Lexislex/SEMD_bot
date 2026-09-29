@@ -1,11 +1,17 @@
 """
 Client for the Minzdrav GitLab (git.minzdrav.gov.ru) that hosts SEMD packages.
 
-Repository layout convention (verified against the live instance):
-    * the 1520 dictionary column GIT_LINK holds a package id such as
-      ``1.2.643.5.1.13.13.15.33.4`` (SEMD kind ``...15.33``, revision ``4``);
-    * the project lives at ``semd/<kind>`` (``semd/1.2.643.5.1.13.13.15.33``);
-    * every revision is a branch named after the full GIT_LINK;
+Repository resolution:
+    * the 1520 dictionary column GIT_LINK holds a package OID such as
+      ``1.2.643.5.1.13.13.15.33.4``;
+    * the source of truth is dictionary 638 (registry of SEMD implementation
+      guides): its column GIT_LINK maps the package OID to a URL like
+      ``<base>/semd/1.2.643.5.1.13.13.15.33/-/tree/1.2.643.5.1.13.13.15.33.4``;
+    * the package OID usually matches the heuristic "project ``semd/<OID
+      without last segment>``, branch = OID", but not always: packages
+      ``...15.36.5`` (SEMD 113) and ``...15.38.2`` (SEMD 114) live in
+      ``semd/...15.35`` and ``semd/...15.37``. The heuristic is only a
+      fallback for packages missing from 638;
     * schematron files are stored in the ``schematron/`` directory.
 """
 
@@ -13,7 +19,7 @@ import logging
 from dataclasses import dataclass
 from time import sleep
 from typing import Any, Dict, List, Optional, Union
-from urllib.parse import quote
+from urllib.parse import quote, unquote, urlsplit
 
 import requests
 
@@ -23,6 +29,8 @@ from utils.retry import backoff_delay
 logger = logging.getLogger(__name__)
 
 SEMD_GROUP = "semd"
+# Разделители project_path и ref в URL GitLab (в 638 встречаются оба)
+REF_URL_MARKERS = ("/-/tree/", "/-/blob/")
 MAX_RETRY_AFTER = 60  # не ждём по Retry-After дольше, сек
 
 
@@ -42,13 +50,43 @@ class GitLabAuthError(GitLabError):
 class SemdRepo:
     """GitLab location of one SEMD revision."""
 
-    git_link: str
+    git_link: str  # package OID from 1520 (shown in notifications)
     project_path: str
     ref: str
 
+    @property
+    def key(self) -> str:
+        """Resolved location ``project_path@ref`` (used to detect remapping)."""
+        return f"{self.project_path}@{self.ref}"
+
+    @classmethod
+    def from_url(cls, url: str, git_link: str) -> "SemdRepo":
+        """Build repo location from a GitLab URL of the 638 dictionary.
+
+        Args:
+            url: ``<base>/<project_path>/-/tree/<ref>`` (or ``/-/blob/``).
+            git_link: package OID from 1520 this URL belongs to.
+
+        Raises:
+            ValueError: if the URL does not contain a project path and a ref.
+        """
+        path = unquote(urlsplit((url or "").strip()).path)
+        for marker in REF_URL_MARKERS:
+            project_path, sep, ref = path.partition(marker)
+            project_path, ref = project_path.strip("/"), ref.strip("/")
+            if sep and project_path and ref:
+                return cls(
+                    git_link=(git_link or "").strip(),
+                    project_path=project_path,
+                    ref=ref,
+                )
+        raise ValueError(f"Некорректная ссылка на репозиторий СЭМД: {url!r}")
+
     @classmethod
     def from_git_link(cls, git_link: str, group: str = SEMD_GROUP) -> "SemdRepo":
-        """Build repo location from a GIT_LINK value of the 1520 dictionary.
+        """Guess repo location from a GIT_LINK value of the 1520 dictionary.
+
+        Fallback for packages missing from dictionary 638 (see module docstring).
 
         Args:
             git_link: package id like ``1.2.643.5.1.13.13.15.33.4``.

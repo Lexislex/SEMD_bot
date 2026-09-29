@@ -48,9 +48,13 @@ class SchematronHandlers:
         self.config = config
         self.logger = logging.getLogger(__name__)
 
-        from plugins.semd_checker.semd_logic import SEMD1520  # TODO сделать класс общим
+        from plugins.semd_checker.semd_logic import (  # TODO сделать классы общими
+            SEMD638,
+            SEMD1520,
+        )
 
         self.semd1520 = SEMD1520()
+        self.semd638 = SEMD638()
         self.client = GitLabClient.from_config(config)
         self.store = SchematronStore(config.paths.fnsi_db_path)
         self.monitor = SchematronMonitor(
@@ -58,6 +62,7 @@ class SchematronHandlers:
             store=self.store,
             semd_lookup=self.semd1520.get_semd_info,
             notify=self.send_change,
+            package_lookup=self.semd638.get_git_link,
         )
 
     def check_updates(self):
