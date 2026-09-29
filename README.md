@@ -16,6 +16,9 @@ SEMD Bot - это продвинутый Telegram-бот для монитори
 # Установка зависимостей
 poetry install
 
+# Получение сертификата Минздрава для FNSI API
+poetry run python scripts/fetch_fnsi_cert.py
+
 # Очистка базы данных (если требуется)
 poetry run python scripts/database/clean_all_db.py --backup
 
@@ -41,6 +44,7 @@ SEMD_bot/
 │   ├── semd_checker/         # Поиск версий СЭМД
 │   ├── nsi_update_checker/   # Мониторинг обновлений НСИ (ScheduledPlugin)
 │   ├── semd_reg_tracker/     # Отслеживание регистрации СЭМД (ScheduledPlugin) ⭐ NEW
+│   ├── schematron_monitor/   # Schematron changes in Minzdrav GitLab (ScheduledPlugin) ⭐ NEW
 │   ├── statistics/           # Статистика активности (админ)
 │   ├── admin_logs/           # Логи системы (админ, в разработке)
 │   ├── plugin_manager/       # Управление плагинами (админ, в разработке)
@@ -109,6 +113,14 @@ SEMD_bot/
   - Development: каждую минуту (месячная) / каждые 3 минуты (квартальная)
   - Production: 1 число месяца / 1 число квартала в 10:00 MSK
 - 📖 [Полная документация](plugins/semd_reg_tracker/README.md)
+
+#### 🧩 Schematron Monitor (ScheduledPlugin) ⭐ NEW
+- Watches schematron changes of selected SEMD in the Minzdrav GitLab
+- Resolves repositories from the `GIT_LINK` column of dictionary 1520
+- Sends a summary and a `.diff` file to `UPDS_MAILING_LIST`
+- Requires `GITLAB_TOKEN` (scope `read_api`)
+- Check interval: every minute (development) / every 60 minutes (production)
+- 📖 [Full documentation](plugins/schematron_monitor/README.md)
 
 #### 📊 Statistics (Admin)
 - Статистика активности пользователей
@@ -286,6 +298,9 @@ poetry run python scripts/testing/test_architecture.py
 ### Обязательные переменные
 
 ```env
+# Сертификат Минздрава для FNSI API (получить/обновить: poetry run python scripts/fetch_fnsi_cert.py)
+# Ожидается по пути env/crts/rosminzdrav.crt
+
 # Telegram Bot API (получите от @BotFather на Telegram)
 BOT_TOKEN=your_telegram_bot_token
 

@@ -51,6 +51,11 @@ if __name__ == '__main__':
         else:
             logger.error("✗ Ошибка загрузки SEMD Reg Tracker")
 
+        if core.load_plugin('plugins.schematron_monitor'):
+            logger.info("✓ Schematron Monitor загружен")
+        else:
+            logger.error("✗ Ошибка загрузки Schematron Monitor")
+
         # 3. Админские плагины
         if core.load_plugin('plugins.statistics'):
             logger.info("✓ Statistics загружен")
