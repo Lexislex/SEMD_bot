@@ -22,36 +22,13 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            cd ~/SEMD_bot
-            SERVICE=semd-bot.service
-
-            echo "=== Pulling latest code ==="
-            git pull --ff-only origin master
-            git log --oneline -1
-
-            echo "=== Installing dependencies ==="
-            # venv на сервере управляется uv; ставим недостающее, ничего не удаляя
-            ~/.local/bin/uv sync --no-dev --no-install-project --inexact
-
-            echo "=== Restarting service ==="
-            # Требует правила в /etc/sudoers.d/semd-bot-deploy:
-            # botman ALL=(root) NOPASSWD: /usr/bin/systemctl restart semd-bot.service, /usr/bin/journalctl -u semd-bot.service -n 30 --no-pager
-            sudo -n /usr/bin/systemctl restart "$SERVICE"
-
-            echo "=== Waiting for service to start ==="
-            sleep 10
-
-            echo "=== Checking service status ==="
-            if systemctl is-active --quiet "$SERVICE"; then
-              echo "✅ Service is running"
-              systemctl status "$SERVICE" --no-pager
-            else
-              echo "❌ Service failed to start"
-              sudo -n /usr/bin/journalctl -u "$SERVICE" -n 30 --no-pager || true
-              exit 1
-            fi
+          # Отпечаток ECDSA-ключа хоста lexislex.ru:2221 — защита от подмены сервера.
+          # Проверить: ssh-keyscan -p 2221 lexislex.ru | ssh-keygen -lf -
+          fingerprint: "SHA256:+0O2/DYZZEx21z3zb9i1QHa/cG3xDPrbgtlAFG3LIrA"
+          # Ключ деплоя на сервере привязан к принудительной команде
+          # ~/bin/semd-deploy.sh (scripts/deploy/semd-deploy.sh) — присланная
+          # команда игнорируется, эта строка нужна только чтобы запустить сессию.
+          script: deploy
 
       - name: Notify on success
         if: success()
