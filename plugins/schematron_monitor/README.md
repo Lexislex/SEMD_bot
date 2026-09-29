@@ -31,8 +31,12 @@ selected SEMD and posts a summary plus the diff to `UPDS_MAILING_LIST`.
 | Only non-schematron files changed | Advance the SHA silently |
 | Stored SHA vanished (force-push) | Notify "history rewritten", attach the current `schematron/*.sch` files in full, take the new baseline |
 | GitLab truncated the diff (`too_large` / `collapsed`) | Attach the new version of that file in full |
+| GitLab compare timed out (`compare_timeout`) | Notify "diff unavailable", attach the current `schematron/*.sch` files in full |
+| Too many changed files for one message | The file list is shortened ("…и ещё N"); the full list is in the `.diff` |
 | Project/branch not found (or hidden from the token) | Status `repo_not_found`, retried every cycle |
-| Telegram delivery failed for every chat | SHA is not advanced, retried next cycle |
+| Message not delivered to any chat, or `UPDS_MAILING_LIST` is empty | SHA is not advanced, retried next cycle |
+| Attachment failed or exceeds 45 MB | Logged; the message still counts as delivered (it has GitLab links) |
+| GitLab 429 / 5xx / timeout | Retried with backoff (honors `Retry-After`, up to 60 s) |
 | Invalid token (401/403) | The cycle stops, error logged |
 
 ## Configuration (`.env`)

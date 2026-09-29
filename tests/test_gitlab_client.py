@@ -17,6 +17,7 @@ def _response(status: int, json_data=None) -> MagicMock:
     resp.status_code = status
     resp.json.return_value = json_data
     resp.text = str(json_data)
+    resp.headers = {}
     return resp
 
 
@@ -155,3 +156,31 @@ class TestClient:
             "/repository/files/schematron%2F331%20v1.3.sch/raw"
         )
         assert get.call_args.kwargs["params"] == {"ref": "sha"}
+
+    def test_retry_on_429_honors_retry_after(self, client):
+        throttled = _response(429)
+        throttled.headers = {"Retry-After": "7"}
+        with (
+            patch.object(
+                client.session,
+                "get",
+                side_effect=[throttled, _response(200, [{"id": "x"}])],
+            ) as get,
+            patch("services.gitlab_client.sleep") as sleep,
+        ):
+            assert client.get_last_commit(REPO)["id"] == "x"
+        assert get.call_count == 2
+        sleep.assert_called_once_with(7)
+
+    def test_list_commits_range_and_path(self, client):
+        with patch.object(
+            client.session, "get", return_value=_response(200, [{"id": "b"}])
+        ) as get:
+            assert client.list_commits(REPO, "a", "b", path="schematron") == [
+                {"id": "b"}
+            ]
+        assert get.call_args.kwargs["params"] == {
+            "ref_name": "a..b",
+            "per_page": 100,
+            "path": "schematron",
+        }

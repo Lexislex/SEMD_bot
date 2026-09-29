@@ -58,6 +58,10 @@ def is_diff_truncated(diff: Dict) -> bool:
     return bool(diff.get("too_large") or diff.get("collapsed"))
 
 
+class NotificationError(Exception):
+    """Notification was not delivered anywhere; baseline must not advance."""
+
+
 @dataclass
 class SchematronChange:
     """Detected schematron change ready to be formatted and sent."""
@@ -73,6 +77,8 @@ class SchematronChange:
     compare_url: str = ""
     tree_url: str = ""
     history_rewritten: bool = False
+    # GitLab не успел построить сравнение (compare_timeout) — diff недоступен
+    compare_timed_out: bool = False
     # Полные файлы схематрона (путь, содержимое) — когда diff показать нельзя
     attachments: List[Tuple[str, bytes]] = field(default_factory=list)
 
@@ -110,6 +116,10 @@ class SchematronMonitor:
                 # Токен общий для всех репозиториев — продолжать бессмысленно
                 logger.error(f"Проверка схематронов прервана: {e}")
                 break
+            except NotificationError as e:
+                # Ожидаемая ситуация (Telegram недоступен / нет чатов) — без traceback
+                logger.error(f"СЭМД {semd_oid}: {e}; повторим в следующем цикле")
+                continue
             except Exception as e:
                 logger.exception(f"Ошибка проверки схематрона СЭМД {semd_oid}: {e}")
                 continue
@@ -235,6 +245,20 @@ class SchematronMonitor:
             change.history_rewritten = True
             change.commits = [head]
             change.compare_url = ""
+            change.attachments = self._download_files(
+                repo, to_sha, self._current_schematron_files(repo, to_sha)
+            )
+            return change
+
+        if comparison.get("compare_timeout"):
+            # Diff-ы могли не вернуться — не молчим, прикладываем файлы целиком
+            logger.warning(
+                f"СЭМД {semd_oid}: таймаут сравнения {from_sha[:8]}..{to_sha[:8]} в GitLab"
+            )
+            change.compare_timed_out = True
+            change.commits = self._schematron_commits(
+                repo, from_sha, to_sha, comparison
+            )
             change.attachments = self._download_files(
                 repo, to_sha, self._current_schematron_files(repo, to_sha)
             )

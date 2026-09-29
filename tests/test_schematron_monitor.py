@@ -7,9 +7,14 @@ from plugins.schematron_monitor.formatters import (
     diff_stats,
     format_change_message,
     is_night,
+    tg_length,
     with_inline_diff,
 )
-from plugins.schematron_monitor.monitor import SchematronMonitor, is_schematron_path
+from plugins.schematron_monitor.monitor import (
+    NotificationError,
+    SchematronMonitor,
+    is_schematron_path,
+)
 from services.gitlab_client import (
     GitLabAuthError,
     GitLabClient,
@@ -231,6 +236,29 @@ class TestMonitor:
         assert monitor.check("331").attachments == []
         client.get_raw_file.assert_not_called()
 
+    def test_compare_timeout_attaches_current_files(
+        self, monitor, client, store, notify
+    ):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331")
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        client.compare.return_value = {
+            "commits": [],
+            "diffs": [],
+            "compare_timeout": True,
+        }
+        client.list_commits.return_value = [commit("bbbbbbbb")]
+
+        change = monitor.check("331")
+
+        # Раньше пустые diffs при таймауте молча сдвигали baseline
+        assert change.compare_timed_out
+        assert [p for p, _ in change.attachments] == [
+            "schematron/331 Schematron v1.3.sch"
+        ]
+        notify.assert_called_once_with(change)
+        assert store.get("331").last_sha == "bbbbbbbb" * 5
+
     def test_git_link_changed_resets_baseline(self, monitor, client, store, notify):
         client.get_last_commit.return_value = commit("aaaaaaaa")
         monitor.check("331")
@@ -267,6 +295,20 @@ class TestMonitor:
         client.get_last_commit.side_effect = GitLabAuthError("401")
         monitor.check_all(["331", "331"])
         assert client.get_last_commit.call_count == 1
+
+    def test_check_all_notification_error_keeps_baseline_and_continues(
+        self, monitor, client, store, notify
+    ):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331")
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        client.compare.return_value = {"commits": [], "diffs": [SCH_DIFF]}
+        notify.side_effect = NotificationError("no chats")
+
+        assert monitor.check_all(["331", "5"]) == []
+
+        assert store.get("331").last_sha == "aaaaaaaa" * 5
+        assert store.get("5").status == STATUS_NO_GIT_LINK  # цикл продолжился
 
     def test_check_all_continues_after_error(self, monitor, client, store):
         client.get_last_commit.side_effect = [RuntimeError("boom"), commit("aaaaaaaa")]
@@ -357,6 +399,38 @@ class TestFormatters:
         text = format_change_message(change, client)
         assert "сравнение недоступно" in text
         assert "приложена файлом" in text
+
+    def test_message_fits_telegram_limit_with_many_files(self, change, client):
+        change.diffs = [
+            dict(SCH_DIFF, new_path=f"schematron/{'очень длинное имя ' * 5}{i}.sch")
+            for i in range(300)
+        ]
+        text = format_change_message(change, client)
+        assert tg_length(text) <= 4000
+        assert "…и ещё" in text
+        assert text.endswith("#схематрон #СЭМД_331")
+
+    def test_message_escapes_gitlab_data(self, change, client):
+        change.semd_name = "<b>name</b>"
+        change.diffs = [
+            dict(SCH_DIFF, new_path="schematron/<script>.sch", renamed_file=False)
+        ]
+        change.commits = [dict(commit("bbbbbbbb"), title="<a href='x'>evil</a> & co")]
+        text = format_change_message(change, client)
+        assert "<script>" not in text and "&lt;script&gt;" in text
+        assert "<a href='x'>" not in text
+        assert "&lt;a href=&#x27;x&#x27;&gt;evil&lt;/a&gt; &amp; co" in text
+        assert "&lt;b&gt;name&lt;/b&gt;" in text
+
+    def test_message_compare_timeout(self, change, client):
+        change.compare_timed_out = True
+        change.diffs = []
+        change.attachments = [(SCH_DIFF["new_path"], b"x")]
+        text = format_change_message(change, client)
+        assert "не успел построить сравнение" in text
+        assert "приложена файлом" in text
+        assert "bbbbbbbb" in text  # коммит показан
+        assert with_inline_diff(text, change) == text
 
     def test_diff_file(self, change):
         text = build_diff_text(change)

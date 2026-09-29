@@ -23,6 +23,7 @@ from utils.retry import backoff_delay
 logger = logging.getLogger(__name__)
 
 SEMD_GROUP = "semd"
+MAX_RETRY_AFTER = 60  # не ждём по Retry-After дольше, сек
 
 
 class GitLabError(Exception):
@@ -145,18 +146,21 @@ class GitLabClient:
                     )
                 if status == 404:
                     raise GitLabNotFoundError(f"GitLab: не найдено {endpoint}")
-                if 500 <= status < 600:
+                if status == 429 or 500 <= status < 600:
+                    # 429 — GitLab ограничивает частоту запросов, это временно
                     last_error = GitLabError(f"HTTP {status}")
                     logger.warning(
                         f"HTTP {status} от GitLab {endpoint} "
                         f"(попытка {attempt}/{self.max_retries})"
                     )
-                elif status >= 400:
+                    if attempt < self.max_retries:
+                        sleep(self._retry_delay(response, attempt))
+                    continue
+                if status >= 400:
                     raise GitLabError(
                         f"GitLab вернул {status} для {endpoint}: {response.text[:200]}"
                     )
-                else:
-                    return response
+                return response
 
             if attempt < self.max_retries:
                 sleep(backoff_delay(attempt))
@@ -165,6 +169,14 @@ class GitLabClient:
             f"Не удалось получить ответ от GitLab {endpoint} "
             f"после {self.max_retries} попыток: {last_error}"
         )
+
+    @staticmethod
+    def _retry_delay(response: requests.Response, attempt: int) -> float:
+        """Honor Retry-After (seconds) if present, else exponential backoff."""
+        retry_after = response.headers.get("Retry-After", "")
+        if retry_after.isdigit():
+            return min(int(retry_after), MAX_RETRY_AFTER)
+        return backoff_delay(attempt)
 
     def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Any:
         """GET an API endpoint and decode JSON."""

@@ -3,9 +3,8 @@ import logging
 import posixpath
 from datetime import datetime
 from html import escape
-from typing import Optional
+from typing import List, Optional, Tuple
 
-from telebot import apihelper
 from telebot.types import CallbackQuery
 
 from services.gitlab_client import GitLabClient
@@ -28,7 +27,7 @@ from .formatters import (
     is_night,
     with_inline_diff,
 )
-from .monitor import SchematronChange, SchematronMonitor
+from .monitor import NotificationError, SchematronChange, SchematronMonitor
 
 STATUS_LABELS = {
     STATUS_OK: "✅",
@@ -39,6 +38,8 @@ STATUS_LABELS = {
     STATUS_ERROR: "❌ ошибка",
 }
 MENU_NAME_LIMIT = 45
+# Лимит Telegram Bot API на отправку файла — 50 МБ, держим запас
+MAX_DOCUMENT_BYTES = 45 * 1024 * 1024
 
 
 class SchematronHandlers:
@@ -71,21 +72,22 @@ class SchematronHandlers:
         """
         Отправляет уведомление об изменении схематрона во все чаты рассылки.
 
+        Доставкой считается отправка текста; ошибки вложений логируются,
+        но не блокируют сдвиг baseline (ссылки на GitLab есть в тексте).
+
         Raises:
-            RuntimeError: если не удалось отправить ни в один чат —
-                тогда монитор не сдвигает baseline и повторит попытку.
+            NotificationError: если текст не доставлен ни в один чат
+                (в т.ч. пустой UPDS_MAILING_LIST) — тогда монитор не сдвигает
+                baseline и повторит попытку в следующем цикле.
         """
         chats = self.config.accounts.updates_mailing_list
         if not chats:
-            self.logger.warning(
-                "UPDS_MAILING_LIST пуст — уведомление о схематроне не отправлено"
+            raise NotificationError(
+                "UPDS_MAILING_LIST пуст — уведомление о схематроне некуда отправить"
             )
-            return
 
-        message = format_change_message(change, self.client)
-        message = with_inline_diff(message, change)
-        diff_bytes = build_diff_text(change).encode("utf-8")
-        file_name = diff_file_name(change)
+        message = with_inline_diff(format_change_message(change, self.client), change)
+        documents = self._build_documents(change)
         silent = is_night()
 
         delivered = 0
@@ -98,35 +100,54 @@ class SchematronHandlers:
                     disable_web_page_preview=True,
                     disable_notification=silent,
                 )
-                if change.diffs:
-                    self.bot.send_document(
-                        chat_id,
-                        io.BytesIO(diff_bytes),
-                        visible_file_name=file_name,
-                        disable_notification=True,
-                    )
-                # Полные файлы — когда сравнение недоступно или diff слишком большой
-                for path, content in change.attachments:
-                    self.bot.send_document(
-                        chat_id,
-                        io.BytesIO(content),
-                        visible_file_name=posixpath.basename(path),
-                        disable_notification=True,
-                    )
-                delivered += 1
-            except apihelper.ApiTelegramException as e:
+            except Exception as e:
                 self.logger.error(
                     f"Не удалось отправить уведомление о схематроне в чат {chat_id}: {e}"
                 )
-            except Exception as e:
-                self.logger.error(
-                    f"Непредвиденная ошибка при отправке уведомления о схематроне в чат {chat_id}: {e}"
-                )
+                continue
+            delivered += 1
+
+            for file_name, content in documents:
+                try:
+                    self.bot.send_document(
+                        chat_id,
+                        io.BytesIO(content),
+                        visible_file_name=file_name,
+                        disable_notification=True,
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f"Не удалось отправить файл {file_name} в чат {chat_id}: {e}"
+                    )
 
         if delivered == 0:
-            raise RuntimeError(
-                f"Уведомление об изменении схематрона СЭМД {change.semd_oid} не доставлено ни в один чат"
+            raise NotificationError(
+                f"уведомление об изменении схематрона СЭМД {change.semd_oid} "
+                f"не доставлено ни в один чат"
             )
+
+    def _build_documents(self, change: SchematronChange) -> List[Tuple[str, bytes]]:
+        """Files to attach: .diff and full schematron files, within the size limit."""
+        documents = []
+        if change.diffs:
+            documents.append(
+                (diff_file_name(change), build_diff_text(change).encode("utf-8"))
+            )
+        # Полные файлы — когда сравнение недоступно или diff слишком большой
+        documents += [
+            (posixpath.basename(path), content) for path, content in change.attachments
+        ]
+
+        allowed = []
+        for file_name, content in documents:
+            if len(content) > MAX_DOCUMENT_BYTES:
+                self.logger.warning(
+                    f"Файл {file_name} ({len(content)} байт) превышает лимит Telegram, "
+                    f"не отправляется — см. ссылки на GitLab в сообщении"
+                )
+                continue
+            allowed.append((file_name, content))
+        return allowed
 
     def _semd_name(self, semd_oid: str) -> str:
         info = self.semd1520.get_semd_info(semd_oid)

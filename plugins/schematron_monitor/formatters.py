@@ -1,15 +1,24 @@
 """Telegram message and .diff file formatting for schematron changes."""
 
+from dataclasses import replace
 from datetime import datetime
 from html import escape
 from typing import Dict, List, Optional, Set, Tuple
 
 from .monitor import SchematronChange, is_diff_truncated
 
-TELEGRAM_MESSAGE_LIMIT = 4096
+# Лимит Telegram — 4096 символов UTF-16 после разбора HTML; мы считаем по
+# сырому HTML и держим запас
+SAFE_MESSAGE_LIMIT = 4000
+MAX_FILES_SHOWN = 15
 # Короткий diff дополнительно вставляем в текст сообщения
 INLINE_DIFF_LIMIT = 2500
 MAX_COMMITS_SHOWN = 5
+
+
+def tg_length(text: str) -> int:
+    """Length in UTF-16 code units, as Telegram counts it."""
+    return len(text.encode("utf-16-le")) // 2
 
 
 def is_night(current_hour: Optional[int] = None) -> bool:
@@ -82,8 +91,15 @@ def _format_commits(change: SchematronChange, client) -> List[str]:
     return lines
 
 
-def format_change_message(change: SchematronChange, client) -> str:
-    """Build HTML notification text (without inline diff)."""
+def _format_files(change: SchematronChange, max_files: int) -> List[str]:
+    attached = {path for path, _ in change.attachments}
+    lines = [_format_file_line(d, attached) for d in change.diffs[:max_files]]
+    if len(change.diffs) > max_files:
+        lines.append(f"• …и ещё {len(change.diffs) - max_files} (см. .diff)")
+    return lines
+
+
+def _render_message(change: SchematronChange, client, max_files: int) -> str:
     lines = [
         "🧩 <b>Изменён схематрон СЭМД</b>",
         "",
@@ -94,22 +110,23 @@ def format_change_message(change: SchematronChange, client) -> str:
     ]
 
     if change.history_rewritten:
-        lines += [
+        lines.append(
             "⚠️ История ветки в GitLab переписана: предыдущая отслеживаемая версия "
             f"(<code>{escape(change.from_sha[:8])}</code>) больше не существует, "
-            "сравнение недоступно.",
-        ]
+            "сравнение недоступно."
+        )
+    elif change.compare_timed_out:
+        lines.append("⚠️ GitLab не успел построить сравнение, diff недоступен.")
+
+    if change.history_rewritten or change.compare_timed_out:
         if change.attachments:
             lines.append("📎 Текущая версия схематрона приложена файлом.")
-        lines += [
-            "",
-            "📝 Последний коммит в схематроне:",
-            _format_commit_line(change, change.head_commit, client),
-        ]
+        commits = change.commits or [change.head_commit]
+        lines += ["", "📝 <b>Коммиты:</b>"]
+        lines += _format_commits(replace(change, commits=commits), client)
     else:
         lines.append("📄 <b>Файлы:</b>")
-        attached = {path for path, _ in change.attachments}
-        lines += [_format_file_line(d, attached) for d in change.diffs]
+        lines += _format_files(change, max_files)
         lines += ["", "📝 <b>Коммиты:</b>"]
         lines += _format_commits(change, client)
 
@@ -123,6 +140,21 @@ def format_change_message(change: SchematronChange, client) -> str:
 
     lines += ["", f"#схематрон #СЭМД_{escape(change.semd_oid)}"]
     return "\n".join(lines)
+
+
+def format_change_message(change: SchematronChange, client) -> str:
+    """Build HTML notification text (without inline diff).
+
+    The file list is shortened until the message fits into one Telegram
+    message; an oversized message would fail in every chat and block the
+    baseline forever.
+    """
+    max_files = MAX_FILES_SHOWN
+    while True:
+        text = _render_message(change, client, max_files)
+        if tg_length(text) <= SAFE_MESSAGE_LIMIT or max_files == 0:
+            return text
+        max_files = max_files // 2
 
 
 def build_diff_text(change: SchematronChange) -> str:
@@ -161,7 +193,11 @@ def diff_file_name(change: SchematronChange) -> str:
 
 def with_inline_diff(message: str, change: SchematronChange) -> str:
     """Append a short diff to the message if it fits into one Telegram message."""
-    if change.history_rewritten or any(is_diff_truncated(d) for d in change.diffs):
+    if (
+        change.history_rewritten
+        or change.compare_timed_out
+        or any(is_diff_truncated(d) for d in change.diffs)
+    ):
         return message
     diff_body = "\n".join(d.get("diff", "").rstrip("\n") for d in change.diffs)
     if not diff_body or len(diff_body) > INLINE_DIFF_LIMIT:
@@ -171,4 +207,4 @@ def with_inline_diff(message: str, change: SchematronChange) -> str:
     # Свёрнутая цитата: diff раскрывается по нажатию
     pre = f"<blockquote expandable><pre>{escape(diff_body)}</pre></blockquote>"
     candidate = f"{body}\n\n{pre}{sep}{hashtags}" if sep else f"{message}\n\n{pre}"
-    return candidate if len(candidate) <= TELEGRAM_MESSAGE_LIMIT else message
+    return candidate if tg_length(candidate) <= SAFE_MESSAGE_LIMIT else message
