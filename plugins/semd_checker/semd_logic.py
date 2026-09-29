@@ -94,9 +94,13 @@ class SEMD1520:
                 parse_dates=["START_DATE", "END_DATE"],
                 dayfirst=True,
             )
+            # GIT_LINK - id пакета СЭМД в GitLab Минздрава (нужен schematron_monitor)
+            if "GIT_LINK" not in self.df.columns:
+                self.df["GIT_LINK"] = None
             # Select only needed columns
             self.df = self.df.loc[
-                :, ["OID", "TYPE", "NAME", "START_DATE", "END_DATE", "FORMAT"]
+                :,
+                ["OID", "TYPE", "NAME", "START_DATE", "END_DATE", "FORMAT", "GIT_LINK"],
             ]
 
             # Add status column
@@ -133,6 +137,37 @@ class SEMD1520:
                 self._load_data()
         except Exception as e:
             logger.warning(f"Error checking SEMD 1520 version update: {e}")
+
+    def get_semd_info(self, semd_oid) -> dict | None:
+        """
+        Get name and GitLab package id for a single SEMD.
+
+        Args:
+            semd_oid: SEMD OID from dictionary 1520 (e.g. "331")
+
+        Returns:
+            dict with keys OID, NAME, GIT_LINK (None if empty) or None if
+            the SEMD is not found or the dictionary is not loaded.
+        """
+        self._check_and_reload_if_needed()
+
+        if self.df is None:
+            return None
+
+        try:
+            rows = self.df[self.df["OID"] == int(semd_oid)]
+        except (TypeError, ValueError):
+            return None
+        if rows.empty:
+            return None
+
+        row = rows.iloc[0]
+        git_link = row["GIT_LINK"]
+        return {
+            "OID": str(semd_oid),
+            "NAME": row["NAME"],
+            "GIT_LINK": str(git_link).strip() if pd.notna(git_link) else None,
+        }
 
     def get_semd_versions(self, semd_oid):
         """
