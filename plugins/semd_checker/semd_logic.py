@@ -65,6 +65,91 @@ class SEMDVersionFetcher:
         return rel_notes
 
 
+class SEMD638:
+    """
+    SEMD 638 - Registry of SEMD implementation guides (packages).
+    Maps a package OID (column GIT_LINK of 1520) to its GitLab URL.
+    """
+
+    SEMD_OID = "1.2.643.5.1.13.13.99.2.638"
+    # Check version at most once per this interval (seconds)
+    VERSION_CHECK_INTERVAL = 60
+
+    def __init__(self):
+        self.id = self.SEMD_OID
+        self.version_fetcher = SEMDVersionFetcher(self.id)
+        self.latest_version = self.version_fetcher.latest
+        self.links: dict[str, str] | None = None
+        self._last_version_check = 0.0
+        self._load_data()
+
+    def _load_data(self):
+        """Load package -> GitLab URL mapping from the 638 CSV file.
+
+        On failure the previously loaded mapping is kept: a stale mapping is
+        better than falling back to the heuristic and resetting baselines.
+        """
+        if self.latest_version == "empty version":
+            logger.warning(
+                "SEMD 638: version is not in nsi_passport yet, "
+                "GitLab links will be resolved heuristically"
+            )
+            return
+        try:
+            download_file(self.id, self.latest_version)
+            df = pd.read_csv(
+                f"{cfg.paths.files_dir}/{self.id}_{self.latest_version}_csv.zip",
+                sep=";",
+                usecols=["OID", "GIT_LINK"],
+                dtype=str,
+            ).dropna()
+            self.links = {
+                oid.strip(): link.strip()
+                for oid, link in zip(df["OID"], df["GIT_LINK"])
+                if link.strip()
+            }
+            logger.info(
+                f"SEMD 638 data loaded successfully (version {self.latest_version})"
+            )
+        except Exception as e:
+            logger.error(f"Error loading SEMD 638 dictionary: {e}")
+
+    def _check_and_reload_if_needed(self):
+        """Reload data if the version in database changed (throttled)."""
+        now = time.time()
+        if now - self._last_version_check < self.VERSION_CHECK_INTERVAL:
+            return
+
+        self._last_version_check = now
+        try:
+            current_version = self.version_fetcher.get_version()
+            if current_version != self.latest_version:
+                logger.info(
+                    f"SEMD 638 version updated: {self.latest_version} → {current_version}"
+                )
+                self.latest_version = current_version
+                self._load_data()
+        except Exception as e:
+            logger.warning(f"Error checking SEMD 638 version update: {e}")
+
+    def get_git_link(self, package_oid: str) -> str | None:
+        """
+        Get GitLab URL of a SEMD package.
+
+        Args:
+            package_oid: package OID (column GIT_LINK of 1520),
+                e.g. "1.2.643.5.1.13.13.15.36.5"
+
+        Returns:
+            URL like ``<base>/<project>/-/tree/<ref>`` or None if the package
+            is unknown or the dictionary is not loaded.
+        """
+        self._check_and_reload_if_needed()
+        if not self.links or not package_oid:
+            return None
+        return self.links.get(str(package_oid).strip())
+
+
 class SEMD1520:
     """
     SEMD 1520 - Medical Document Structure Dictionary.

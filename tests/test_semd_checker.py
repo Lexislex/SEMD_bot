@@ -236,3 +236,61 @@ class TestSearchResultsKeyboard:
 
         all_callbacks = [btn.callback_data for row in markup.keyboard for btn in row]
         assert "back_to_menu" in all_callbacks
+
+
+class TestSEMD638:
+    """Unit tests for SEMD638.get_git_link()"""
+
+    PACKAGE = "1.2.643.5.1.13.13.15.36.5"
+    URL = (
+        "https://git.minzdrav.gov.ru/semd/1.2.643.5.1.13.13.15.35/-/tree/"
+        "1.2.643.5.1.13.13.15.35.5"
+    )
+
+    @pytest.fixture
+    def fetcher(self):
+        with patch("plugins.semd_checker.semd_logic.SEMDVersionFetcher") as mock:
+            mock.return_value.latest = "7.75"
+            mock.return_value.get_version.return_value = "7.75"
+            yield mock.return_value
+
+    @pytest.fixture
+    def read_csv(self):
+        with patch("plugins.semd_checker.semd_logic.download_file"):
+            with patch("pandas.read_csv") as mock_csv:
+                mock_csv.return_value = pd.DataFrame(
+                    {
+                        "OID": [self.PACKAGE, "1.2.643.5.1.13.13.15.1.1"],
+                        "GIT_LINK": [f" {self.URL} ", None],
+                    }
+                )
+                yield mock_csv
+
+    def test_get_git_link(self, fetcher, read_csv):
+        from plugins.semd_checker.semd_logic import SEMD638
+
+        semd = SEMD638()
+        assert semd.get_git_link(f" {self.PACKAGE}") == self.URL
+        assert semd.get_git_link("1.2.643.5.1.13.13.15.1.1") is None
+        assert semd.get_git_link("unknown") is None
+        assert semd.get_git_link(None) is None
+
+    def test_not_in_passport_skips_download(self, fetcher, read_csv):
+        from plugins.semd_checker.semd_logic import SEMD638
+
+        fetcher.latest = "empty version"
+        fetcher.get_version.return_value = "empty version"
+        semd = SEMD638()
+        read_csv.assert_not_called()
+        assert semd.get_git_link(self.PACKAGE) is None
+
+    def test_failed_reload_keeps_previous_data(self, fetcher, read_csv):
+        from plugins.semd_checker.semd_logic import SEMD638
+
+        semd = SEMD638()
+        fetcher.get_version.return_value = "7.76"
+        read_csv.side_effect = FileNotFoundError("no file")
+        semd._last_version_check = 0.0
+
+        assert semd.get_git_link(self.PACKAGE) == self.URL
+        assert semd.latest_version == "7.76"

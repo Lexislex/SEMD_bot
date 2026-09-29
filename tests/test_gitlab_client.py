@@ -50,6 +50,39 @@ class TestSemdRepo:
         with pytest.raises(ValueError):
             SemdRepo.from_git_link(value)
 
+    def test_key(self):
+        assert REPO.key == "semd/1.2.643.5.1.13.13.15.33@1.2.643.5.1.13.13.15.33.4"
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://git.minzdrav.gov.ru/semd/1.2.643.5.1.13.13.15.35/-/tree/"
+            "1.2.643.5.1.13.13.15.35.5",
+            # так в 638 записана ссылка СЭМД 321
+            " https://git.minzdrav.gov.ru/semd/1.2.643.5.1.13.13.15.35/-/blob/"
+            "1.2.643.5.1.13.13.15.35.5/ ",
+        ],
+    )
+    def test_from_url(self, url):
+        repo = SemdRepo.from_url(url, "1.2.643.5.1.13.13.15.36.5")
+        assert repo.project_path == "semd/1.2.643.5.1.13.13.15.35"
+        assert repo.ref == "1.2.643.5.1.13.13.15.35.5"
+        assert repo.git_link == "1.2.643.5.1.13.13.15.36.5"
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "",
+            None,
+            "https://git.minzdrav.gov.ru/semd/1.2.643.5.1.13.13.15.35",
+            "https://git.minzdrav.gov.ru/-/tree/1.2.643.5.1.13.13.15.35.5",
+            "https://git.minzdrav.gov.ru/semd/1.2.643.5.1.13.13.15.35/-/tree/",
+        ],
+    )
+    def test_from_url_invalid(self, url):
+        with pytest.raises(ValueError):
+            SemdRepo.from_url(url, "1.2.643.5.1.13.13.15.36.5")
+
 
 class TestClient:
     def test_requires_token(self):
