@@ -10,7 +10,7 @@ from services.database_service import add_log
 from utils.message_manager import cleanup_previous_message, get_message_manager
 
 from .keyboards import get_back_button, get_search_results_keyboard
-from .semd_logic import SEMD1520  # TODO сделать класс общим
+from .semd_logic import get_semd1520
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class SEMDHandlers:
     def __init__(self, bot, config):
         self.bot = bot
         self.config = config
-        self.semd = SEMD1520()
+        self.semd = get_semd1520()
         # Store search results per user for pagination (TTLCache with auto-expiry)
         self._user_searches: TTLCache[int, SearchCache] = TTLCache(
             maxsize=self._CACHE_MAXSIZE, ttl=self._CACHE_TTL

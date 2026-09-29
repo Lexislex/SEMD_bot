@@ -294,3 +294,59 @@ class TestSEMD638:
 
         assert semd.get_git_link(self.PACKAGE) == self.URL
         assert semd.latest_version == "7.76"
+
+
+class TestSharedDictionaries:
+    """Shared instances and common reload behaviour (NsiDictionary)."""
+
+    @pytest.fixture
+    def semd_module(self):
+        from plugins.semd_checker import semd_logic
+
+        with patch.object(semd_logic, "SEMDVersionFetcher") as fetcher:
+            fetcher.return_value.latest = "1.0"
+            fetcher.return_value.get_version.return_value = "1.0"
+            with (
+                patch.object(semd_logic, "download_file"),
+                patch("pandas.read_csv") as read_csv,
+            ):
+                read_csv.return_value = pd.DataFrame(
+                    {
+                        "OID": [331, 332],
+                        "TYPE": [7, 7],
+                        "NAME": ["Направление (CDA) Редакция 4"] * 2,
+                        "START_DATE": [datetime(2025, 1, 1)] * 2,
+                        "END_DATE": [pd.NaT] * 2,
+                        "FORMAT": [2, 2],
+                        "GIT_LINK": ["1.2.643.5.1.13.13.15.33.4", None],
+                    }
+                )
+                with patch.dict(semd_logic._shared_instances, clear=True):
+                    yield semd_logic, fetcher.return_value, read_csv
+
+    def test_shared_instance_loaded_once(self, semd_module):
+        semd_logic, _, read_csv = semd_module
+
+        first = semd_logic.get_semd1520()
+        assert semd_logic.get_semd1520() is first
+        assert read_csv.call_count == 1
+
+    def test_failed_reload_keeps_previous_1520_data(self, semd_module):
+        semd_logic, fetcher, read_csv = semd_module
+        semd = semd_logic.get_semd1520()
+        fetcher.get_version.return_value = "1.1"
+        read_csv.side_effect = FileNotFoundError("no file")
+        semd._last_version_check = 0.0
+
+        assert semd.get_semd_info("331")["GIT_LINK"] == "1.2.643.5.1.13.13.15.33.4"
+        assert semd.latest_version == "1.1"
+
+    def test_get_semd_versions_delegates_to_type(self, semd_module):
+        semd_logic, _, _ = semd_module
+        semd = semd_logic.get_semd1520()
+
+        by_oid = semd.get_semd_versions(332)
+        assert by_oid == semd.get_semd_versions_by_type(7)
+        assert by_oid[0].startswith("Направление")
+        assert semd.get_semd_versions(999)[1] == "СЭМД с OID 999 не найдена"
+        assert semd.get_semd_versions("abc")[0] is None
