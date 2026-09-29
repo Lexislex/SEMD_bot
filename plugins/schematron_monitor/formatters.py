@@ -2,9 +2,9 @@
 
 from datetime import datetime
 from html import escape
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
-from .monitor import SchematronChange
+from .monitor import SchematronChange, is_diff_truncated
 
 TELEGRAM_MESSAGE_LIMIT = 4096
 # Короткий diff дополнительно вставляем в текст сообщения
@@ -39,13 +39,7 @@ def _format_date(iso_date: Optional[str]) -> str:
         return iso_date[:10]
 
 
-def _is_truncated(diff: Dict) -> bool:
-    return bool(diff.get("too_large") or diff.get("collapsed")) or (
-        not diff.get("diff") and not diff.get("deleted_file")
-    )
-
-
-def _format_file_line(diff: Dict) -> str:
+def _format_file_line(diff: Dict, attached: Set[str]) -> str:
     old_path, new_path = diff.get("old_path"), diff.get("new_path")
     if diff.get("new_file"):
         icon, name = "➕", escape(new_path)
@@ -56,8 +50,11 @@ def _format_file_line(diff: Dict) -> str:
     else:
         icon, name = "✏️", escape(new_path)
 
-    if _is_truncated(diff):
-        stats = " (diff слишком большой, см. GitLab)"
+    if is_diff_truncated(diff):
+        if diff.get("new_path") in attached:
+            stats = " (diff слишком большой, новая версия приложена файлом)"
+        else:
+            stats = " (diff слишком большой, см. GitLab)"
     else:
         added, removed = diff_stats(diff.get("diff", ""))
         stats = f" (+{added} / −{removed})"
@@ -101,13 +98,18 @@ def format_change_message(change: SchematronChange, client) -> str:
             "⚠️ История ветки в GitLab переписана: предыдущая отслеживаемая версия "
             f"(<code>{escape(change.from_sha[:8])}</code>) больше не существует, "
             "сравнение недоступно.",
+        ]
+        if change.attachments:
+            lines.append("📎 Текущая версия схематрона приложена файлом.")
+        lines += [
             "",
             "📝 Последний коммит в схематроне:",
             _format_commit_line(change, change.head_commit, client),
         ]
     else:
         lines.append("📄 <b>Файлы:</b>")
-        lines += [_format_file_line(d) for d in change.diffs]
+        attached = {path for path, _ in change.attachments}
+        lines += [_format_file_line(d, attached) for d in change.diffs]
         lines += ["", "📝 <b>Коммиты:</b>"]
         lines += _format_commits(change, client)
 
@@ -141,7 +143,7 @@ def build_diff_text(change: SchematronChange) -> str:
         )
         parts.append(f"--- {old_path}")
         parts.append(f"+++ {new_path}")
-        if _is_truncated(diff):
+        if is_diff_truncated(diff):
             parts.append(
                 "# diff слишком большой, GitLab не вернул содержимое — см. сравнение в GitLab"
             )
@@ -159,7 +161,7 @@ def diff_file_name(change: SchematronChange) -> str:
 
 def with_inline_diff(message: str, change: SchematronChange) -> str:
     """Append a short diff to the message if it fits into one Telegram message."""
-    if change.history_rewritten or any(_is_truncated(d) for d in change.diffs):
+    if change.history_rewritten or any(is_diff_truncated(d) for d in change.diffs):
         return message
     diff_body = "\n".join(d.get("diff", "").rstrip("\n") for d in change.diffs)
     if not diff_body or len(diff_body) > INLINE_DIFF_LIMIT:

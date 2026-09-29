@@ -107,8 +107,14 @@ class GitLabClient:
 
     # ------------------------------------------------------------------ HTTP
 
-    def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Any:
-        """GET an API endpoint with retries on timeouts, connection errors and 5xx."""
+    def _request(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> requests.Response:
+        """GET an API endpoint with retries on timeouts, connection errors and 5xx.
+
+        Returns:
+            Successful (2xx) response.
+        """
         url = build_url(self.api_url, endpoint)
         last_error: Optional[Exception] = None
 
@@ -150,12 +156,7 @@ class GitLabClient:
                         f"GitLab вернул {status} для {endpoint}: {response.text[:200]}"
                     )
                 else:
-                    try:
-                        return response.json()
-                    except ValueError as e:
-                        raise GitLabError(
-                            f"Невалидный JSON от GitLab {endpoint}: {e}"
-                        ) from e
+                    return response
 
             if attempt < self.max_retries:
                 sleep(backoff_delay(attempt))
@@ -164,6 +165,14 @@ class GitLabClient:
             f"Не удалось получить ответ от GitLab {endpoint} "
             f"после {self.max_retries} попыток: {last_error}"
         )
+
+    def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """GET an API endpoint and decode JSON."""
+        response = self._request(endpoint, params)
+        try:
+            return response.json()
+        except ValueError as e:
+            raise GitLabError(f"Невалидный JSON от GitLab {endpoint}: {e}") from e
 
     @staticmethod
     def _project_id(repo: SemdRepo) -> str:
@@ -217,6 +226,35 @@ class GitLabClient:
         return self._get(
             f"projects/{self._project_id(repo)}/repository/commits", params
         )
+
+    def list_files(self, repo: SemdRepo, path: str, ref: str) -> List[str]:
+        """Paths of all files under ``path`` at ``ref`` (branch or sha)."""
+        files: List[str] = []
+        page = 1
+        while True:
+            items = self._get(
+                f"projects/{self._project_id(repo)}/repository/tree",
+                {
+                    "ref": ref,
+                    "path": path,
+                    "recursive": "true",
+                    "per_page": 100,
+                    "page": page,
+                },
+            )
+            files += [item["path"] for item in items if item.get("type") == "blob"]
+            if len(items) < 100:
+                return files
+            page += 1
+
+    def get_raw_file(self, repo: SemdRepo, file_path: str, ref: str) -> bytes:
+        """Raw content of ``file_path`` at ``ref`` (branch or sha)."""
+        response = self._request(
+            f"projects/{self._project_id(repo)}/repository/files/"
+            f"{quote(file_path, safe='')}/raw",
+            {"ref": ref},
+        )
+        return response.content
 
     def compare(self, repo: SemdRepo, from_sha: str, to_sha: str) -> Dict:
         """Compare two commits.

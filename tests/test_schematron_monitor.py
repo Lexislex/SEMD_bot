@@ -73,6 +73,13 @@ def client() -> MagicMock:
     mock.tree_url.side_effect = real.tree_url
     mock.commit_url.side_effect = real.commit_url
     mock.list_commits.return_value = []
+    mock.list_files.return_value = [
+        "schematron/.gitkeep",
+        "schematron/331 Schematron v1.3.sch",
+    ]
+    mock.get_raw_file.side_effect = (
+        lambda repo, path, ref: f"<schema {path}@{ref}/>".encode()
+    )
     return mock
 
 
@@ -176,8 +183,53 @@ class TestMonitor:
 
         assert change.history_rewritten
         assert change.compare_url == ""
+        # Сравнения нет — прикладываем текущие .sch целиком (без .gitkeep)
+        assert change.attachments == [
+            (
+                "schematron/331 Schematron v1.3.sch",
+                f"<schema schematron/331 Schematron v1.3.sch@{'cccccccc' * 5}/>".encode(),
+            )
+        ]
+        client.list_files.assert_called_once_with(
+            change.repo, "schematron", "cccccccc" * 5
+        )
         notify.assert_called_once()
         assert store.get("331").last_sha == "cccccccc" * 5
+
+    def test_history_rewritten_download_failure_still_notifies(
+        self, monitor, client, notify
+    ):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331")
+        client.get_last_commit.return_value = commit("cccccccc")
+        client.compare.side_effect = GitLabNotFoundError("404")
+        client.get_raw_file.side_effect = GitLabError("500")
+
+        change = monitor.check("331")
+
+        assert change.attachments == []
+        notify.assert_called_once()
+
+    def test_truncated_diff_attaches_new_file(self, monitor, client):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331")
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        big = dict(SCH_DIFF, diff="", too_large=True)
+        client.compare.return_value = {"commits": [], "diffs": [big]}
+
+        change = monitor.check("331")
+
+        assert [p for p, _ in change.attachments] == [SCH_DIFF["new_path"]]
+        client.list_files.assert_not_called()
+
+    def test_regular_diff_has_no_attachments(self, monitor, client):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331")
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        client.compare.return_value = {"commits": [], "diffs": [SCH_DIFF]}
+
+        assert monitor.check("331").attachments == []
+        client.get_raw_file.assert_not_called()
 
     def test_git_link_changed_resets_baseline(self, monitor, client, store, notify):
         client.get_last_commit.return_value = commit("aaaaaaaa")
@@ -291,6 +343,20 @@ class TestFormatters:
         change.diffs = [dict(SCH_DIFF, diff="+x\n" * 2000)]
         message = format_change_message(change, client)
         assert with_inline_diff(message, change) == message
+
+    def test_message_truncated_with_attachment(self, change, client):
+        change.diffs = [dict(SCH_DIFF, diff="", too_large=True)]
+        change.attachments = [(SCH_DIFF["new_path"], b"x")]
+        text = format_change_message(change, client)
+        assert "новая версия приложена файлом" in text
+        assert with_inline_diff(text, change) == text
+
+    def test_message_history_rewritten_mentions_attachment(self, change, client):
+        change.history_rewritten = True
+        change.attachments = [(SCH_DIFF["new_path"], b"x")]
+        text = format_change_message(change, client)
+        assert "сравнение недоступно" in text
+        assert "приложена файлом" in text
 
     def test_diff_file(self, change):
         text = build_diff_text(change)

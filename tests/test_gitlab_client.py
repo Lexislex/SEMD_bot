@@ -127,3 +127,31 @@ class TestClient:
             pytest.raises(GitLabNotFoundError),
         ):
             client.compare(REPO, "gone", "b")
+
+    def test_list_files_paginates(self, client):
+        page1 = [{"type": "blob", "path": f"schematron/{i}.sch"} for i in range(100)]
+        page2 = [
+            {"type": "tree", "path": "schematron/sub"},
+            {"type": "blob", "path": "schematron/x.sch"},
+        ]
+        with patch.object(
+            client.session,
+            "get",
+            side_effect=[_response(200, page1), _response(200, page2)],
+        ) as get:
+            files = client.list_files(REPO, "schematron", "sha")
+        assert len(files) == 101 and files[-1] == "schematron/x.sch"
+        assert get.call_args.kwargs["params"]["page"] == 2
+
+    def test_get_raw_file(self, client):
+        resp = _response(200)
+        resp.content = b"<schema/>"
+        with patch.object(client.session, "get", return_value=resp) as get:
+            assert (
+                client.get_raw_file(REPO, "schematron/331 v1.3.sch", "sha")
+                == b"<schema/>"
+            )
+        assert get.call_args.args[0].endswith(
+            "/repository/files/schematron%2F331%20v1.3.sch/raw"
+        )
+        assert get.call_args.kwargs["params"] == {"ref": "sha"}

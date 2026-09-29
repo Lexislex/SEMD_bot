@@ -13,7 +13,7 @@ Algorithm per SEMD:
 
 import logging
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from services.gitlab_client import (
     GitLabAuthError,
@@ -53,6 +53,11 @@ def is_schematron_diff(diff: Dict) -> bool:
     )
 
 
+def is_diff_truncated(diff: Dict) -> bool:
+    """GitLab did not return diff content (file too large / collapsed)."""
+    return bool(diff.get("too_large") or diff.get("collapsed"))
+
+
 @dataclass
 class SchematronChange:
     """Detected schematron change ready to be formatted and sent."""
@@ -68,6 +73,8 @@ class SchematronChange:
     compare_url: str = ""
     tree_url: str = ""
     history_rewritten: bool = False
+    # Полные файлы схематрона (путь, содержимое) — когда diff показать нельзя
+    attachments: List[Tuple[str, bytes]] = field(default_factory=list)
 
 
 SemdLookup = Callable[[str], Optional[Dict]]
@@ -228,13 +235,48 @@ class SchematronMonitor:
             change.history_rewritten = True
             change.commits = [head]
             change.compare_url = ""
+            change.attachments = self._download_files(
+                repo, to_sha, self._current_schematron_files(repo, to_sha)
+            )
             return change
 
         change.diffs = [d for d in comparison.get("diffs", []) if is_schematron_diff(d)]
         if not change.diffs:
             return None
         change.commits = self._schematron_commits(repo, from_sha, to_sha, comparison)
+        truncated = [
+            d["new_path"]
+            for d in change.diffs
+            if is_diff_truncated(d) and not d.get("deleted_file")
+        ]
+        change.attachments = self._download_files(repo, to_sha, truncated)
         return change
+
+    def _current_schematron_files(self, repo: SemdRepo, ref: str) -> List[str]:
+        try:
+            files = self.client.list_files(repo, SCHEMATRON_DIR, ref)
+        except GitLabAuthError:
+            raise
+        except GitLabError as e:
+            logger.warning(
+                f"Не удалось получить список файлов {repo.project_path}: {e}"
+            )
+            return []
+        return [f for f in files if is_schematron_path(f)]
+
+    def _download_files(
+        self, repo: SemdRepo, ref: str, paths: List[str]
+    ) -> List[Tuple[str, bytes]]:
+        """Download full files; a failed download is logged and skipped."""
+        result = []
+        for path in paths:
+            try:
+                result.append((path, self.client.get_raw_file(repo, path, ref)))
+            except GitLabAuthError:
+                raise
+            except GitLabError as e:
+                logger.warning(f"Не удалось скачать {repo.project_path}/{path}: {e}")
+        return result
 
     def _schematron_commits(
         self, repo: SemdRepo, from_sha: str, to_sha: str, comparison: Dict

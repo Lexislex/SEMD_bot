@@ -1,5 +1,6 @@
 import io
 import logging
+import posixpath
 from datetime import datetime
 from html import escape
 from typing import Optional
@@ -102,6 +103,14 @@ class SchematronHandlers:
                         chat_id,
                         io.BytesIO(diff_bytes),
                         visible_file_name=file_name,
+                        disable_notification=True,
+                    )
+                # Полные файлы — когда сравнение недоступно или diff слишком большой
+                for path, content in change.attachments:
+                    self.bot.send_document(
+                        chat_id,
+                        io.BytesIO(content),
+                        visible_file_name=posixpath.basename(path),
                         disable_notification=True,
                     )
                 delivered += 1
