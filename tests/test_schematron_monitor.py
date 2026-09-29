@@ -28,6 +28,7 @@ from services.schematron_store import (
     STATUS_OK,
     STATUS_REPO_NOT_FOUND,
     SchematronStore,
+    WatchState,
 )
 
 GIT_LINK = "1.2.643.5.1.13.13.15.33.4"
@@ -115,7 +116,7 @@ class TestMonitor:
 
         state = store.get("331")
         assert state.last_sha == "aaaaaaaa" * 5
-        assert state.git_link == GIT_LINK
+        assert state.git_link == f"semd/1.2.643.5.1.13.13.15.33@{GIT_LINK}"
         assert state.status == STATUS_OK
         client.get_last_commit.assert_called_once()
         assert client.get_last_commit.call_args.kwargs["path"] == "schematron"
@@ -271,7 +272,70 @@ class TestMonitor:
         client.compare.assert_not_called()
         notify.assert_not_called()
         state = store.get("331")
-        assert state.git_link == "1.2.643.5.1.13.13.15.33.5"
+        assert state.git_link == f"semd/1.2.643.5.1.13.13.15.33@{SEMD_NEW['GIT_LINK']}"
+        assert state.last_sha == "dddddddd" * 5
+
+    def test_repo_resolved_via_638(self, monitor, client, store):
+        # СЭМД 113: пакет ...15.36.5 лежит в проекте ...15.35
+        url = (
+            "https://git.minzdrav.gov.ru/semd/1.2.643.5.1.13.13.15.35/-/tree/"
+            "1.2.643.5.1.13.13.15.35.5"
+        )
+        monitor.package_lookup = {GIT_LINK: url}.get
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+
+        monitor.check("331")
+
+        repo = client.get_last_commit.call_args.args[0]
+        assert repo.project_path == "semd/1.2.643.5.1.13.13.15.35"
+        assert repo.ref == "1.2.643.5.1.13.13.15.35.5"
+        assert repo.git_link == GIT_LINK
+        assert store.get("331").git_link == f"{repo.project_path}@{repo.ref}"
+
+    @pytest.mark.parametrize(
+        "lookup",
+        [
+            {}.get,  # пакета нет в 638
+            {GIT_LINK: "https://git.minzdrav.gov.ru/semd/x"}.get,  # битая ссылка
+            MagicMock(side_effect=RuntimeError("638 broken")),
+        ],
+    )
+    def test_repo_falls_back_to_heuristic(self, monitor, client, store, lookup):
+        monitor.package_lookup = lookup
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+
+        monitor.check("331")
+
+        repo = client.get_last_commit.call_args.args[0]
+        assert repo.project_path == "semd/1.2.643.5.1.13.13.15.33"
+        assert repo.ref == GIT_LINK
+        assert store.get("331").status == STATUS_OK
+
+    def test_legacy_raw_git_link_keeps_baseline(self, monitor, client, store):
+        # Старые записи хранят OID пакета — та же ветка не должна сбрасывать baseline
+        store.save(WatchState(semd_oid="331", git_link=GIT_LINK, last_sha="a" * 40))
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+
+        monitor.check("331")
+
+        state = store.get("331")
+        assert state.last_sha == "a" * 40
+        assert state.git_link == f"semd/1.2.643.5.1.13.13.15.33@{GIT_LINK}"
+
+    def test_remap_in_638_resets_baseline(self, monitor, client, store, notify):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331")
+        monitor.package_lookup = {
+            GIT_LINK: "https://git.minzdrav.gov.ru/semd/other/-/blob/other.1"
+        }.get
+        client.get_last_commit.return_value = commit("dddddddd")
+
+        assert monitor.check("331") is None
+
+        client.compare.assert_not_called()
+        notify.assert_not_called()
+        state = store.get("331")
+        assert state.git_link == "semd/other@other.1"
         assert state.last_sha == "dddddddd" * 5
 
     def test_repo_not_found(self, monitor, client, store):
