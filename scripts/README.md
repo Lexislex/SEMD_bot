@@ -27,13 +27,13 @@ scripts/
 
 ```bash
 # Показать информацию о базах
-poetry run python scripts/database/clean_all_db.py --info
+uv run python scripts/database/clean_all_db.py --info
 
 # Удалить FNSI базу с резервной копией
-poetry run python scripts/database/clean_fnsi_db.py --backup
+uv run python scripts/database/clean_fnsi_db.py --backup
 
 # Удалить всё
-poetry run python scripts/database/clean_all_db.py --backup
+uv run python scripts/database/clean_all_db.py --backup
 
 # Быстро удалить FNSI (без вопросов)
 ./scripts/database/clean_fnsi_db_quick.sh
@@ -49,7 +49,7 @@ poetry run python scripts/database/clean_all_db.py --backup
 
 ```bash
 # Тест архитектуры
-poetry run python scripts/testing/test_architecture.py
+uv run python scripts/testing/test_architecture.py
 ```
 
 Подробная документация: [`testing/README.md`](./testing/README.md)
@@ -58,13 +58,13 @@ poetry run python scripts/testing/test_architecture.py
 
 ```bash
 # 1. Очистить БД с резервной копией
-poetry run python scripts/database/clean_all_db.py --backup
+uv run python scripts/database/clean_all_db.py --backup
 
 # 2. Запустить архитектурный тест
-poetry run python scripts/testing/test_architecture.py
+uv run python scripts/testing/test_architecture.py
 
 # 3. Если тесты пройдены, запустить бота
-poetry run python main.py
+uv run python main.py
 ```
 
 ## 📝 Как добавить новый скрипт

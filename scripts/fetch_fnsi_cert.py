@@ -4,7 +4,7 @@
 и сохраняет её в env/crts/rosminzdrav.crt.
 
 Запуск:
-    poetry run python scripts/fetch_fnsi_cert.py
+    uv run python scripts/fetch_fnsi_cert.py
 """
 
 import subprocess

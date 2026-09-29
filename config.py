@@ -127,6 +127,24 @@ def _read_int_env(name: str, default: int, minimum: int) -> int:
         return default
 
 
+def _read_int_list_env(name: str, required: bool = False) -> List[int]:
+    """Read a comma-separated list of integers (Telegram IDs, ports).
+
+    Raises:
+        ValueError: the variable is required but empty, or contains a non-integer.
+    """
+    raw = _read_env(name, "")
+    try:
+        values = [int(item.strip()) for item in raw.split(",") if item.strip()]
+    except ValueError as e:
+        raise ValueError(
+            f"{name} должен содержать целые числа через запятую: {raw!r}"
+        ) from e
+    if required and not values:
+        raise ValueError(f"Не задана обязательная переменная окружения {name} (.env)")
+    return values
+
+
 def get_config() -> Config:
     global _CONFIG
     if _CONFIG is not None:
@@ -142,17 +160,8 @@ def get_config() -> Config:
     fnsi_files_url = _read_env("FNSI_FILES_URL")
     fnsi_api_key = _read_env("FNSI_API_KEY")
 
-    _fnsi_timeout_str = _read_env("FNSI_REQUEST_TIMEOUT", "60")
-    try:
-        fnsi_request_timeout = max(5, int(_fnsi_timeout_str))
-    except ValueError:
-        fnsi_request_timeout = 60
-
-    _fnsi_retries_str = _read_env("FNSI_MAX_RETRIES", "3")
-    try:
-        fnsi_max_retries = max(1, int(_fnsi_retries_str))
-    except ValueError:
-        fnsi_max_retries = 3
+    fnsi_request_timeout = _read_int_env("FNSI_REQUEST_TIMEOUT", 60, minimum=5)
+    fnsi_max_retries = _read_int_env("FNSI_MAX_RETRIES", 3, minimum=1)
 
     # GitLab Минздрава
     gitlab_url = _read_env("GITLAB_URL", DEFAULT_GITLAB_URL)
@@ -169,8 +178,8 @@ def get_config() -> Config:
     proxy_enabled = _read_env("PROXY_ENABLED", "false").lower() in ("true", "1", "yes")
     proxy_type = _read_env("PROXY_TYPE", "http")
     proxy_host = _read_env("PROXY_HOST")
-    proxy_port_str = _read_env("PROXY_PORT")
-    proxy_port = int(proxy_port_str) if proxy_port_str else None
+    proxy_port = _read_int_list_env("PROXY_PORT")
+    proxy_port = proxy_port[0] if proxy_port else None
     proxy_user = _read_env("PROXY_USER")
     proxy_pass = _read_env("PROXY_PASS")
 
@@ -185,12 +194,8 @@ def get_config() -> Config:
     )
 
     accounts_cfg = AccountsConfig(
-        admin_ids=[int(id.strip()) for id in _read_env("ADMIN_ID").split(",")],
-        updates_mailing_list=[
-            int(id.strip())
-            for id in _read_env("UPDS_MAILING_LIST", "").split(",")
-            if id.strip()
-        ],
+        admin_ids=_read_int_list_env("ADMIN_ID", required=True),
+        updates_mailing_list=_read_int_list_env("UPDS_MAILING_LIST"),
     )
 
     paths_cfg = PathsConfig(

@@ -3,9 +3,9 @@
 Скрипт для полной очистки всех баз данных (FNSI и User).
 
 Использование:
-    poetry run python clean_all_db.py              # Очистить все базы
-    poetry run python clean_all_db.py --backup      # С резервной копией
-    poetry run python clean_all_db.py --info        # Показать информацию
+    uv run python clean_all_db.py              # Очистить все базы
+    uv run python clean_all_db.py --backup      # С резервной копией
+    uv run python clean_all_db.py --info        # Показать информацию
 """
 
 import sys
@@ -122,9 +122,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Примеры использования:
-  poetry run python clean_all_db.py              # Полная очистка
-  poetry run python clean_all_db.py --backup      # С резервной копией
-  poetry run python clean_all_db.py --info        # Показать информацию
+  uv run python clean_all_db.py              # Полная очистка
+  uv run python clean_all_db.py --backup      # С резервной копией
+  uv run python clean_all_db.py --info        # Показать информацию
         '''
     )
 

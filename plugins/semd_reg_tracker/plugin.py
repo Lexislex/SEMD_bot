@@ -89,8 +89,8 @@ class Plugin(BasePlugin):
             # Проверяем, является ли текущая дата первым числом квартала
             is_quarter_start = now.day == 1 and now.month in [1, 4, 7, 10]
 
-            # В production режиме проверяем день месяца
-            if self.config.app.env == 'production':
+            # Вне development проверяем день месяца
+            if self.config.app.env != 'development':
                 if now.day != 1:  # Выполняем только 1 числа месяца
                     return
                 if is_quarter_start:  # Приоритет квартальной сводке
@@ -126,8 +126,8 @@ class Plugin(BasePlugin):
             # Проверяем, является ли текущая дата первым числом квартала
             is_quarter_start = now.day == 1 and now.month in [1, 4, 7, 10]
 
-            # В production режиме проверяем день и месяц
-            if self.config.app.env == 'production':
+            # Вне development проверяем день и месяц
+            if self.config.app.env != 'development':
                 if not is_quarter_start:  # Выполняем только 1 числа квартала
                     return
 

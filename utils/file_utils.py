@@ -1,87 +1,81 @@
 import glob
+import logging
 import os
 
 import requests
 
-# подключаем модули для dotenv
 from config import get_config
 from services.proxy_utils import build_proxies, build_url
 
 cfg = get_config()
 
-# Настройка логирования
-import logging
-
 logger = logging.getLogger(__name__)
 
 
+def _remove_other_versions(nsi: str, path: str, keep: str) -> None:
+    """Remove downloaded archives of other versions of the same dictionary."""
+    # "_" после OID: иначе шаблон 1.2.643.5.1.13.13.99.2.63* зацепит и ...2.638
+    for f in glob.glob(os.path.join(path, f"{glob.escape(nsi)}_*_csv.zip")):
+        if os.path.basename(f) != keep:
+            try:
+                os.remove(f)
+            except OSError as e:
+                logger.warning(f"Не удалось удалить старую версию {f}: {e}")
+
+
 def download_file(nsi: str, ver: str, path: str = cfg.paths.files_dir) -> bool:
-    """Эта функция удаляет все версии справочника в папке и скачивает
-    необходимый архив со справочником в заданную папку.
+    """Скачивает архив справочника в заданную папку и удаляет его прежние версии.
 
     Args:
         nsi (str): OID справочника
         ver (str): версия справочника
+        path (str): папка для архивов
 
     Returns:
-        bool: True, если скачан успешно, False, если нет.
+        bool: True, если файл есть или скачан успешно, False, если нет.
     """
+    path = str(path)
     out_file_name = f"{nsi}_{ver}_csv.zip"
-    s = requests.Session()
-    s.headers.update(
-        {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0)"
-            " Gecko/20100101 Firefox/45.0"
-        }
-    )
-    if os.path.exists(os.path.join(path, out_file_name)):
+    out_path = os.path.join(path, out_file_name)
+    if os.path.exists(out_path):
         return True
     try:
-        # Удаляем предыдущие версии справочника
-        for f in glob.glob(f"{path}{nsi}*.zip"):
-            os.remove(f)
-
         # Проверяем наличие сертификата
         if not cfg.paths.mzrf_cert_path.exists():
             logger.error(
                 f"Сертификат Минздрава не найден: {cfg.paths.mzrf_cert_path}. "
-                f"Выполните poetry run python scripts/fetch_fnsi_cert.py"
+                f"Выполните uv run python scripts/fetch_fnsi_cert.py"
             )
             return False
 
         # Формируем URL для скачивания без двойного слеша
         download_url = build_url(cfg.apis.fnsi_files_url, out_file_name)
 
-        # Получаем настройки прокси для данного URL
-        proxies = build_proxies(download_url)
+        req = requests.get(
+            download_url,
+            stream=True,
+            verify=str(cfg.paths.mzrf_cert_path),
+            proxies=build_proxies(download_url),
+            timeout=cfg.apis.fnsi_request_timeout,
+        )
+        if req.status_code != 200:
+            try:
+                error_text = req.json().get("resultText", req.text)
+            except ValueError:
+                error_text = req.text
+            raise FileNotFoundError(error_text)
 
-        # Скачиваем файл
-        with open(os.path.join(path, out_file_name), "wb") as out_stream:
-            req = requests.get(
-                download_url,
-                stream=True,
-                verify=str(cfg.paths.mzrf_cert_path),
-                proxies=proxies,
-            )
-            if req.status_code != 200:
-                try:
-                    error_text = req.json().get("resultText", req.text)
-                except ValueError:
-                    error_text = req.text
-                raise FileNotFoundError(error_text)
-            # Скачиваем файл в папку
+        with open(out_path, "wb") as out_stream:
             for chunk in req.iter_content(1024):  # Куски по 1 КБ
                 out_stream.write(chunk)
+
+        # Старые версии удаляем только после успешной загрузки новой
+        _remove_other_versions(nsi, path, keep=out_file_name)
         return True
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Ошибка скачивания файла {out_file_name}: {e}")
-        if os.path.exists(os.path.join(path, out_file_name)):
-            os.remove(os.path.join(path, out_file_name))
-        return False
     except Exception as e:
-        logger.error(f"Неожиданная ошибка при скачивании файла {out_file_name}: {e}")
-        if os.path.exists(os.path.join(path, out_file_name)):
-            os.remove(os.path.join(path, out_file_name))
+        logger.error(f"Ошибка скачивания файла {out_file_name}: {e}")
+        if os.path.exists(out_path):
+            os.remove(out_path)
         return False
 
 

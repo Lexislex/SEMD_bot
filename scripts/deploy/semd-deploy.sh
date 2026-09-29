@@ -25,8 +25,9 @@ git pull --ff-only origin master
 git log --oneline -1
 
 echo "=== Installing dependencies ==="
-# venv управляется uv; ставим недостающее, ничего не удаляя
-"$UV" sync --no-dev --no-install-project --inexact
+# venv управляется uv; версии строго по закоммиченному uv.lock (--frozen),
+# ставим недостающее, ничего не удаляя (--inexact)
+"$UV" sync --frozen --no-dev --inexact
 
 echo "=== Restarting service ==="
 # Требует правила в /etc/sudoers.d/semd-bot-deploy:

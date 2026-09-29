@@ -13,20 +13,20 @@ SEMD Bot - это продвинутый Telegram-бот для монитори
 ## 🚀 Быстрый старт
 
 ```bash
-# Установка зависимостей
-poetry install
+# Установка зависимостей (uv, см. https://docs.astral.sh/uv/)
+uv sync
 
 # Получение сертификата Минздрава для FNSI API
-poetry run python scripts/fetch_fnsi_cert.py
+uv run python scripts/fetch_fnsi_cert.py
 
 # Очистка базы данных (если требуется)
-poetry run python scripts/database/clean_all_db.py --backup
+uv run python scripts/database/clean_all_db.py --backup
 
 # Запуск архитектурного теста
-poetry run python scripts/testing/test_architecture.py
+uv run python scripts/testing/test_architecture.py
 
 # Запуск бота
-poetry run python main.py
+uv run python main.py
 ```
 
 ## 📁 Структура проекта
@@ -116,7 +116,7 @@ SEMD_bot/
 
 #### 🧩 Schematron Monitor (ScheduledPlugin) ⭐ NEW
 - Watches schematron changes of selected SEMD in the Minzdrav GitLab
-- Resolves repositories from the `GIT_LINK` column of dictionary 1520
+- Resolves repositories via dictionary 638 (package OID from 1520 → GitLab URL)
 - Sends a summary and a `.diff` file to `UPDS_MAILING_LIST`
 - Requires `GITLAB_TOKEN` (scope `read_api`)
 - Check interval: every minute (development) / every 60 minutes (production)
@@ -185,20 +185,20 @@ cat docs/PLUGIN_DEVELOPMENT_GUIDE.md
 
 ```bash
 # Информация о базах
-poetry run python scripts/database/clean_all_db.py --info
+uv run python scripts/database/clean_all_db.py --info
 
 # Очистка FNSI базы с резервной копией
-poetry run python scripts/database/clean_fnsi_db.py --backup
+uv run python scripts/database/clean_fnsi_db.py --backup
 
 # Очистка данных, сохранение схемы
-poetry run python scripts/database/clean_fnsi_db.py --keep-schema
+uv run python scripts/database/clean_fnsi_db.py --keep-schema
 ```
 
 ### Testing Scripts (тесты)
 
 ```bash
 # Тест архитектуры (проверка всех компонентов)
-poetry run python scripts/testing/test_architecture.py
+uv run python scripts/testing/test_architecture.py
 ```
 
 Подробная документация в [`scripts/README.md`](scripts/README.md)
@@ -252,7 +252,7 @@ poetry run python scripts/testing/test_architecture.py
 
 ```bash
 # Запустить архитектурный тест
-poetry run python scripts/testing/test_architecture.py
+uv run python scripts/testing/test_architecture.py
 
 # Ожидаемый результат:
 # ✅ SEMDBotCore создан успешно
@@ -272,7 +272,7 @@ poetry run python scripts/testing/test_architecture.py
 ## 🔧 Требования
 
 - Python 3.10+
-- Poetry 2.0+ для управления зависимостями
+- [uv](https://docs.astral.sh/uv/) для управления зависимостями (`uv.lock` в репозитории)
 - SQLite3 (встроенный в Python)
 - Telegram Bot API token
 
@@ -298,7 +298,7 @@ poetry run python scripts/testing/test_architecture.py
 ### Обязательные переменные
 
 ```env
-# Сертификат Минздрава для FNSI API (получить/обновить: poetry run python scripts/fetch_fnsi_cert.py)
+# Сертификат Минздрава для FNSI API (получить/обновить: uv run python scripts/fetch_fnsi_cert.py)
 # Ожидается по пути env/crts/rosminzdrav.crt
 
 # Telegram Bot API (получите от @BotFather на Telegram)
@@ -336,13 +336,13 @@ LOG_LEVEL=INFO
 
 ```bash
 # 1. Очистить БД
-poetry run python scripts/database/clean_all_db.py --backup
+uv run python scripts/database/clean_all_db.py --backup
 
 # 2. Запустить архитектурный тест
-poetry run python scripts/testing/test_architecture.py
+uv run python scripts/testing/test_architecture.py
 
 # 3. Если тесты пройдены - запустить бота
-poetry run python main.py
+uv run python main.py
 ```
 
 ### Разработка плагина для community
@@ -355,7 +355,7 @@ poetry run python main.py
 2. Создай папку `plugins/community/my_plugin/`
 3. Напиши код (BasePlugin или ScheduledPlugin)
 4. Добавь README.md в папку плагина
-5. Тестируй локально: `poetry run python main.py`
+5. Тестируй локально: `uv run python main.py`
 6. Создай Pull Request
 
 Все детали и примеры кода в гайде! 📖
