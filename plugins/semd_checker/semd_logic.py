@@ -2,6 +2,7 @@
 
 import logging
 import sqlite3
+import threading
 import time
 from datetime import datetime
 
@@ -65,13 +66,17 @@ class SEMDVersionFetcher:
         return rel_notes
 
 
-class SEMD638:
+class NsiDictionary:
     """
-    SEMD 638 - Registry of SEMD implementation guides (packages).
-    Maps a package OID (column GIT_LINK of 1520) to its GitLab URL.
+    FNSI dictionary loaded from its CSV archive.
+
+    The version comes from ``nsi_passport`` (filled by the NSI Update Checker);
+    when it changes, the archive of the new version is downloaded and loaded.
+    Subclasses set ``SEMD_OID``/``TITLE`` and implement ``_load_data``.
     """
 
-    SEMD_OID = "1.2.643.5.1.13.13.99.2.638"
+    SEMD_OID = ""
+    TITLE = ""
     # Check version at most once per this interval (seconds)
     VERSION_CHECK_INTERVAL = 60
 
@@ -79,9 +84,83 @@ class SEMD638:
         self.id = self.SEMD_OID
         self.version_fetcher = SEMDVersionFetcher(self.id)
         self.latest_version = self.version_fetcher.latest
-        self.links: dict[str, str] | None = None
         self._last_version_check = 0.0
+        # Хендлеры Telegram и планировщик работают в разных потоках
+        self._reload_lock = threading.RLock()
         self._load_data()
+
+    @property
+    def csv_path(self) -> str:
+        return f"{cfg.paths.files_dir}/{self.id}_{self.latest_version}_csv.zip"
+
+    def _download(self) -> None:
+        download_file(self.id, self.latest_version)
+
+    def _load_data(self) -> None:
+        """Load data of ``self.latest_version``."""
+        raise NotImplementedError
+
+    def _check_and_reload_if_needed(self):
+        """Check if version has been updated in database and reload data if needed.
+
+        Version check is throttled to once per VERSION_CHECK_INTERVAL seconds
+        to avoid excessive database queries on frequent requests.
+        """
+        now = time.time()
+        if now - self._last_version_check < self.VERSION_CHECK_INTERVAL:
+            return  # Skip check, too soon since last check
+
+        with self._reload_lock:
+            if now - self._last_version_check < self.VERSION_CHECK_INTERVAL:
+                return  # другой поток уже проверил
+            self._last_version_check = now
+            try:
+                current_version = self.version_fetcher.get_version()
+                if current_version != self.latest_version:
+                    logger.info(
+                        f"{self.TITLE} version updated: "
+                        f"{self.latest_version} → {current_version}"
+                    )
+                    self.latest_version = current_version
+                    self._load_data()
+            except Exception as e:
+                logger.warning(f"Error checking {self.TITLE} version update: {e}")
+
+
+_shared_instances: dict = {}
+_shared_lock = threading.Lock()
+
+
+def _shared(cls):
+    """One instance of a dictionary per process (lazy, thread-safe)."""
+    with _shared_lock:
+        if cls not in _shared_instances:
+            _shared_instances[cls] = cls()
+        return _shared_instances[cls]
+
+
+def get_semd1520() -> "SEMD1520":
+    """Shared SEMD1520 instance (semd_checker, schematron_monitor, semd_reg_tracker)."""
+    return _shared(SEMD1520)
+
+
+def get_semd638() -> "SEMD638":
+    """Shared SEMD638 instance."""
+    return _shared(SEMD638)
+
+
+class SEMD638(NsiDictionary):
+    """
+    SEMD 638 - Registry of SEMD implementation guides (packages).
+    Maps a package OID (column GIT_LINK of 1520) to its GitLab URL.
+    """
+
+    SEMD_OID = "1.2.643.5.1.13.13.99.2.638"
+    TITLE = "SEMD 638"
+
+    def __init__(self):
+        self.links: dict[str, str] | None = None
+        super().__init__()
 
     def _load_data(self):
         """Load package -> GitLab URL mapping from the 638 CSV file.
@@ -96,9 +175,9 @@ class SEMD638:
             )
             return
         try:
-            download_file(self.id, self.latest_version)
+            self._download()
             df = pd.read_csv(
-                f"{cfg.paths.files_dir}/{self.id}_{self.latest_version}_csv.zip",
+                self.csv_path,
                 sep=";",
                 usecols=["OID", "GIT_LINK"],
                 dtype=str,
@@ -113,24 +192,6 @@ class SEMD638:
             )
         except Exception as e:
             logger.error(f"Error loading SEMD 638 dictionary: {e}")
-
-    def _check_and_reload_if_needed(self):
-        """Reload data if the version in database changed (throttled)."""
-        now = time.time()
-        if now - self._last_version_check < self.VERSION_CHECK_INTERVAL:
-            return
-
-        self._last_version_check = now
-        try:
-            current_version = self.version_fetcher.get_version()
-            if current_version != self.latest_version:
-                logger.info(
-                    f"SEMD 638 version updated: {self.latest_version} → {current_version}"
-                )
-                self.latest_version = current_version
-                self._load_data()
-        except Exception as e:
-            logger.warning(f"Error checking SEMD 638 version update: {e}")
 
     def get_git_link(self, package_oid: str) -> str | None:
         """
@@ -150,7 +211,7 @@ class SEMD638:
         return self.links.get(str(package_oid).strip())
 
 
-class SEMD1520:
+class SEMD1520(NsiDictionary):
     """
     SEMD 1520 - Medical Document Structure Dictionary.
     Handles retrieval and formatting of SEMD versions.
@@ -158,70 +219,52 @@ class SEMD1520:
 
     # Standard FNSI OID for SEMD 1520
     SEMD_OID = "1.2.643.5.1.13.13.11.1520"
-    # Check version at most once per this interval (seconds)
-    VERSION_CHECK_INTERVAL = 60
+    TITLE = "SEMD 1520"
 
     def __init__(self):
-        self.id = self.SEMD_OID
-        self.version_fetcher = SEMDVersionFetcher(self.id)
-        self.latest_version = self.version_fetcher.latest
         self.df = None
-        self._last_version_check = 0.0
-        self._load_data()
+        super().__init__()
 
     def _load_data(self):
         """Load SEMD 1520 data from CSV file"""
         try:
-            download_file(self.id, self.latest_version)
-            self.df = pd.read_csv(
-                f"{cfg.paths.files_dir}/{self.id}_{self.latest_version}_csv.zip",
+            self._download()
+            df = pd.read_csv(
+                self.csv_path,
                 sep=";",
                 parse_dates=["START_DATE", "END_DATE"],
                 dayfirst=True,
             )
             # GIT_LINK - id пакета СЭМД в GitLab Минздрава (нужен schematron_monitor)
-            if "GIT_LINK" not in self.df.columns:
-                self.df["GIT_LINK"] = None
+            if "GIT_LINK" not in df.columns:
+                df["GIT_LINK"] = None
             # Select only needed columns
-            self.df = self.df.loc[
+            df = df.loc[
                 :,
                 ["OID", "TYPE", "NAME", "START_DATE", "END_DATE", "FORMAT", "GIT_LINK"],
             ]
 
             # Add status column
-            self.df["EXPIRED"] = self.df["END_DATE"].apply(
-                lambda x: "запланирован вывод"
-                if x and x > datetime.now()
-                else ("выведен" if x and x < datetime.now() else "активно")
+            df["EXPIRED"] = df["END_DATE"].apply(
+                lambda x: (
+                    "запланирован вывод"
+                    if x and x > datetime.now()
+                    else ("выведен" if x and x < datetime.now() else "активно")
+                )
             )
+            # Подменяем целиком: читатели в других потоках видят старую или новую версию
+            self.df = df
             logger.info(
                 f"SEMD 1520 data loaded successfully (version {self.latest_version})"
             )
         except Exception as e:
+            # Прежние данные (если были) остаются — как в SEMD638
             logger.error(f"Error loading SEMD 1520 dictionary: {e}")
-            self.df = None
 
-    def _check_and_reload_if_needed(self):
-        """Check if version has been updated in database and reload data if needed.
-
-        Version check is throttled to once per VERSION_CHECK_INTERVAL seconds
-        to avoid excessive database queries on frequent search requests.
-        """
-        now = time.time()
-        if now - self._last_version_check < self.VERSION_CHECK_INTERVAL:
-            return  # Skip check, too soon since last check
-
-        self._last_version_check = now
-        try:
-            current_version = self.version_fetcher.get_version()
-            if current_version != self.latest_version:
-                logger.info(
-                    f"SEMD 1520 version updated: {self.latest_version} → {current_version}"
-                )
-                self.latest_version = current_version
-                self._load_data()
-        except Exception as e:
-            logger.warning(f"Error checking SEMD 1520 version update: {e}")
+    def get_dataframe(self) -> pd.DataFrame | None:
+        """Current dictionary data (reloaded if a new version appeared)."""
+        self._check_and_reload_if_needed()
+        return self.df
 
     def get_semd_info(self, semd_oid) -> dict | None:
         """
@@ -234,13 +277,12 @@ class SEMD1520:
             dict with keys OID, NAME, GIT_LINK (None if empty) or None if
             the SEMD is not found or the dictionary is not loaded.
         """
-        self._check_and_reload_if_needed()
-
-        if self.df is None:
+        df = self.get_dataframe()
+        if df is None:
             return None
 
         try:
-            rows = self.df[self.df["OID"] == int(semd_oid)]
+            rows = df[df["OID"] == int(semd_oid)]
         except (TypeError, ValueError):
             return None
         if rows.empty:
@@ -256,7 +298,7 @@ class SEMD1520:
 
     def get_semd_versions(self, semd_oid):
         """
-        Get all SEMD versions for a specific document type.
+        Get all SEMD versions for the document type of a specific SEMD.
 
         Args:
             semd_oid: SEMD OID to search for
@@ -264,10 +306,8 @@ class SEMD1520:
         Returns:
             tuple: (document_name, versions_table, document_type, link_1520, link_1522, dictionary_version)
         """
-        # Check if version has been updated and reload if needed
-        self._check_and_reload_if_needed()
-
-        if self.df is None:
+        df = self.get_dataframe()
+        if df is None:
             return (
                 None,
                 "Ошибка: не удалось загрузить данные СЭМД",
@@ -278,63 +318,15 @@ class SEMD1520:
             )
 
         try:
-            # Find document type by OID
-            semd_type_row = self.df[self.df["OID"] == int(semd_oid)]
+            semd_type_row = df[df["OID"] == int(semd_oid)]
             if semd_type_row.empty:
                 return None, f"СЭМД с OID {semd_oid} не найдена", None, None, None, None
-
             doc_type = semd_type_row["TYPE"].iloc[0]
-
-            # Get all versions for this document type
-            semd_versions = self.df[self.df["TYPE"] == doc_type].copy()
-            semd_versions = semd_versions.sort_values("OID")
-
-            # Format dates
-            semd_versions["START_DATE"] = semd_versions["START_DATE"].dt.strftime(
-                "%d.%m.%y"
-            )
-            semd_versions["END_DATE"] = semd_versions["END_DATE"].dt.strftime(
-                "%d.%m.%y"
-            )
-
-            # Get document name
-            name = f"{semd_versions['NAME'].iloc[-1].split('(CDA)')[0]}"
-
-            # Create links to NSI
-            link_1520 = (
-                f"<a href='https://nsi.rosminzdrav.ru/dictionaries/"
-                f"1.2.643.5.1.13.13.11.1520/passport/latest"
-                f"#filters=TYPE%7C{doc_type}%7CGTE&filters=TYPE%7C{doc_type}%7CLTE'>🔗</a>"
-            )
-            link_1522 = (
-                f"<a href='https://nsi.rosminzdrav.ru/dictionaries/"
-                f"1.2.643.5.1.13.13.11.1522/passport/latest"
-                f"#filters=RECID%7C{doc_type}%7CGTE&filters=RECID%7C{doc_type}%7CLTE'>🔗</a>"
-            )
-
-            # Format as table
-            semd_versions = semd_versions.loc[
-                :, ["OID", "START_DATE", "END_DATE"]
-            ].reset_index(drop=True)
-            versions_table = tabulate(
-                semd_versions,
-                showindex=False,
-                tablefmt="simple",
-                headers=["ID", "Start", "Stop"],
-            )
-
-            return (
-                name,
-                versions_table,
-                doc_type,
-                link_1520,
-                link_1522,
-                self.latest_version,
-            )
-
         except Exception as e:
             logger.error(f"Error getting SEMD versions: {e}")
             return None, f"Ошибка при получении версий: {e}", None, None, None, None
+
+        return self.get_semd_versions_by_type(doc_type)
 
     def get_newest_versions(self, count=1):
         """
