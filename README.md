@@ -44,6 +44,7 @@ SEMD_bot/
 │   ├── semd_checker/         # Поиск версий СЭМД
 │   ├── nsi_update_checker/   # Мониторинг обновлений НСИ (ScheduledPlugin)
 │   ├── semd_reg_tracker/     # Отслеживание регистрации СЭМД (ScheduledPlugin) ⭐ NEW
+│   ├── schematron_monitor/   # Schematron changes in Minzdrav GitLab (ScheduledPlugin) ⭐ NEW
 │   ├── statistics/           # Статистика активности (админ)
 │   ├── admin_logs/           # Логи системы (админ, в разработке)
 │   ├── plugin_manager/       # Управление плагинами (админ, в разработке)
@@ -112,6 +113,14 @@ SEMD_bot/
   - Development: каждую минуту (месячная) / каждые 3 минуты (квартальная)
   - Production: 1 число месяца / 1 число квартала в 10:00 MSK
 - 📖 [Полная документация](plugins/semd_reg_tracker/README.md)
+
+#### 🧩 Schematron Monitor (ScheduledPlugin) ⭐ NEW
+- Watches schematron changes of selected SEMD in the Minzdrav GitLab
+- Resolves repositories from the `GIT_LINK` column of dictionary 1520
+- Sends a summary and a `.diff` file to `UPDS_MAILING_LIST`
+- Requires `GITLAB_TOKEN` (scope `read_api`)
+- Check interval: every minute (development) / every 60 minutes (production)
+- 📖 [Full documentation](plugins/schematron_monitor/README.md)
 
 #### 📊 Statistics (Admin)
 - Статистика активности пользователей
