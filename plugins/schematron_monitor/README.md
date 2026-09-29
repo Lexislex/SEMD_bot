@@ -29,7 +29,8 @@ selected SEMD and posts a summary plus the diff to `UPDS_MAILING_LIST`.
 |---|---|
 | First check / `GIT_LINK` changed | Store the baseline SHA, no notification |
 | Only non-schematron files changed | Advance the SHA silently |
-| Stored SHA vanished (force-push) | Notify "history rewritten", take the new baseline |
+| Stored SHA vanished (force-push) | Notify "history rewritten", attach the current `schematron/*.sch` files in full, take the new baseline |
+| GitLab truncated the diff (`too_large` / `collapsed`) | Attach the new version of that file in full |
 | Project/branch not found (or hidden from the token) | Status `repo_not_found`, retried every cycle |
 | Telegram delivery failed for every chat | SHA is not advanced, retried next cycle |
 | Invalid token (401/403) | The cycle stops, error logged |
