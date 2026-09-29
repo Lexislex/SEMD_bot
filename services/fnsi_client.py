@@ -45,7 +45,7 @@ def get_version(nsi: str, ver: str = "latest") -> dict:
     if not cfg.paths.mzrf_cert_path.exists():
         error_msg = (
             f"Сертификат Минздрава не найден: {cfg.paths.mzrf_cert_path}. "
-            f"Выполните poetry run python scripts/fetch_fnsi_cert.py"
+            f"Выполните uv run python scripts/fetch_fnsi_cert.py"
         )
         logger.error(error_msg)
         raise ConnectionError(error_msg)

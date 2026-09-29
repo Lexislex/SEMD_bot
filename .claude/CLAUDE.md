@@ -4,7 +4,7 @@ Telegram bot for monitoring medical references (SEMD, NSI) from Russian Ministry
 
 ## Tech Stack
 
-- Python ≥3.10, Poetry
+- Python ≥3.10, uv (`uv.lock` is committed; `[tool.uv] package = false`)
 - pyTelegramBotAPI, SQLite, schedule, pandas
 
 ## Project Structure
@@ -23,9 +23,9 @@ tests/          - tests (dev-only branch)
 ## Commands
 
 ```bash
-poetry install                  # install dependencies
-poetry run python main.py       # run bot
-poetry run pytest               # run tests
+uv sync                         # install dependencies (incl. dev group)
+uv run python main.py           # run bot
+uv run pytest                   # run tests (testpaths = tests/)
 ```
 
 ## Configuration

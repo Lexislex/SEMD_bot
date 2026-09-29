@@ -18,7 +18,7 @@
 ### Показать информацию о базе
 
 ```bash
-poetry run python clean_fnsi_db.py --info
+uv run python clean_fnsi_db.py --info
 ```
 
 Выведет:
@@ -29,7 +29,7 @@ poetry run python clean_fnsi_db.py --info
 ### Удалить только данные (сохранить схему)
 
 ```bash
-poetry run python clean_fnsi_db.py --keep-schema
+uv run python clean_fnsi_db.py --keep-schema
 ```
 
 Полезно когда нужно сохранить структуру таблиц, но очистить все записи.
@@ -37,7 +37,7 @@ poetry run python clean_fnsi_db.py --keep-schema
 ### Полная очистка (удалить базу)
 
 ```bash
-poetry run python clean_fnsi_db.py
+uv run python clean_fnsi_db.py
 ```
 
 Удалит всю базу. При следующем запуске бота она будет пересоздана с нулевой структурой.
@@ -45,7 +45,7 @@ poetry run python clean_fnsi_db.py
 ### Полная очистка с резервной копией
 
 ```bash
-poetry run python clean_fnsi_db.py --backup
+uv run python clean_fnsi_db.py --backup
 ```
 
 Перед удалением создаст резервную копию с временной меткой:
@@ -54,7 +54,7 @@ poetry run python clean_fnsi_db.py --backup
 ### Пользовательский путь к базе
 
 ```bash
-poetry run python clean_fnsi_db.py --info --db-path /path/to/custom/db.sqlite
+uv run python clean_fnsi_db.py --info --db-path /path/to/custom/db.sqlite
 ```
 
 ---
@@ -84,7 +84,7 @@ bash clean_fnsi_db_quick.sh
 ### Показать информацию о всех базах
 
 ```bash
-poetry run python clean_all_db.py --info
+uv run python clean_all_db.py --info
 ```
 
 Выведет подробную информацию о размере, таблицах и записях в каждой базе.
@@ -92,7 +92,7 @@ poetry run python clean_all_db.py --info
 ### Полная очистка всех баз
 
 ```bash
-poetry run python clean_all_db.py
+uv run python clean_all_db.py
 ```
 
 Требует подтверждения перед удалением.
@@ -100,7 +100,7 @@ poetry run python clean_all_db.py
 ### Очистка с резервными копиями
 
 ```bash
-poetry run python clean_all_db.py --backup
+uv run python clean_all_db.py --backup
 ```
 
 Создаст резервные копии для обеих баз:
@@ -115,29 +115,29 @@ poetry run python clean_all_db.py --backup
 
 ```bash
 # 1. Посмотреть текущее состояние
-poetry run python clean_fnsi_db.py --info
+uv run python clean_fnsi_db.py --info
 
 # 2. Очистить только FNSI базу
-poetry run python clean_fnsi_db.py
+uv run python clean_fnsi_db.py
 
 # 3. Запустить бота для тестирования
-poetry run python main.py
+uv run python main.py
 ```
 
 ### 🧪 Полное тестирование с чистыми данными
 
 ```bash
 # 1. Создать резервные копии на случай
-poetry run python clean_all_db.py --backup
+uv run python clean_all_db.py --backup
 
 # 2. Удалить все базы
-poetry run python clean_all_db.py
+uv run python clean_all_db.py
 
 # 3. Запустить тестовый скрипт
-poetry run python test_architecture.py
+uv run python test_architecture.py
 
 # 4. Запустить бота
-poetry run python main.py
+uv run python main.py
 ```
 
 ### 🚀 Быстрая подготовка к демонстрации
@@ -147,17 +147,17 @@ poetry run python main.py
 ./clean_fnsi_db_quick.sh
 
 # Запустить бота
-poetry run python main.py
+uv run python main.py
 ```
 
 ### 📦 Подготовка проекта перед коммитом
 
 ```bash
 # Очистить обе базы с резервными копиями
-poetry run python clean_all_db.py --backup
+uv run python clean_all_db.py --backup
 
 # Проверить что всё в порядке
-poetry run python test_architecture.py
+uv run python test_architecture.py
 ```
 
 ---
@@ -219,7 +219,7 @@ chmod 644 env/data/*.sqlite
 **Решение:** Используйте флаг `--backup` чтобы видеть, что происходит:
 
 ```bash
-poetry run python clean_all_db.py --backup --info
+uv run python clean_all_db.py --backup --info
 ```
 
 ---

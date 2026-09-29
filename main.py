@@ -19,7 +19,7 @@ from core.bot import SEMDBotCore
 core = SEMDBotCore(cfg)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         logger.info("=" * 50)
         logger.info("Запуск SEMD Bot v2.0 (Полностью модульная архитектура)")
@@ -29,58 +29,40 @@ if __name__ == '__main__':
         logger.info("Загрузка плагинов...")
 
         # 1. Root Menu - центральный маршрутизатор (ВСЕГДА ПЕРВЫЙ!)
-        if core.load_plugin('plugins.root_menu'):
+        if core.load_plugin("plugins.root_menu"):
             logger.info("✓ Root Menu загружен")
         else:
             logger.error("✗ Ошибка загрузки Root Menu!")
             raise RuntimeError("Root Menu plugin failed to load")
 
-        # 2. Публичные плагины (доступны всем пользователям)
-        if core.load_plugin('plugins.semd_checker'):
-            logger.info("✓ SEMD Checker загружен")
+        # 2. Публичные и 3. админские плагины; ошибка одного не мешает остальным.
+        # WIP (отключены до завершения): plugins.admin_logs, plugins.plugin_manager
+        plugins = [
+            ("plugins.semd_checker", "SEMD Checker"),
+            ("plugins.nsi_update_checker", "NSI Update Checker"),
+            ("plugins.semd_reg_tracker", "SEMD Reg Tracker"),
+            ("plugins.schematron_monitor", "Schematron Monitor"),
+            ("plugins.statistics", "Statistics"),
+        ]
+        failed = []
+        for plugin_path, title in plugins:
+            if core.load_plugin(plugin_path):
+                logger.info(f"✓ {title} загружен")
+            else:
+                logger.error(f"✗ Ошибка загрузки {title}")
+                failed.append(title)
+
+        if failed:
+            logger.warning(f"Не загружены плагины: {', '.join(failed)}")
         else:
-            logger.error("✗ Ошибка загрузки SEMD Checker")
-
-        if core.load_plugin('plugins.nsi_update_checker'):
-            logger.info("✓ NSI Update Checker загружен")
-        else:
-            logger.error("✗ Ошибка загрузки NSI Update Checker")
-
-        if core.load_plugin('plugins.semd_reg_tracker'):
-            logger.info("✓ SEMD Reg Tracker загружен")
-        else:
-            logger.error("✗ Ошибка загрузки SEMD Reg Tracker")
-
-        if core.load_plugin('plugins.schematron_monitor'):
-            logger.info("✓ Schematron Monitor загружен")
-        else:
-            logger.error("✗ Ошибка загрузки Schematron Monitor")
-
-        # 3. Админские плагины
-        if core.load_plugin('plugins.statistics'):
-            logger.info("✓ Statistics загружен")
-        else:
-            logger.error("✗ Ошибка загрузки Statistics")
-
-        # WIP плагины (в разработке, отключены до завершения)
-        # if core.load_plugin('plugins.admin_logs'):
-        #     logger.info("✓ Admin Logs загружен")
-        # else:
-        #     logger.error("✗ Ошибка загрузки Admin Logs")
-
-        # if core.load_plugin('plugins.plugin_manager'):
-        #     logger.info("✓ Plugin Manager загружен")
-        # else:
-        #     logger.error("✗ Ошибка загрузки Plugin Manager")
-
-        logger.info("Все плагины загружены успешно!")
+            logger.info("Все плагины загружены успешно!")
         logger.info("=" * 50)
 
         # Запускаем бота (включает планировщик и polling)
         core.start()
 
     except KeyboardInterrupt:
-        logger.info('Остановка по Ctrl+C')
+        logger.info("Остановка по Ctrl+C")
         core.shutdown()
     except Exception as e:
         logger.error(f"Ошибка при запуске бота: {e}", exc_info=True)

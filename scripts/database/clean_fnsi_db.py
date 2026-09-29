@@ -3,10 +3,10 @@
 Скрипт для очистки базы данных FNSI для отладки и тестирования.
 
 Использование:
-    poetry run python clean_fnsi_db.py              # Очистить все таблицы
-    poetry run python clean_fnsi_db.py --keep-schema   # Оставить схему, удалить только данные
-    poetry run python clean_fnsi_db.py --backup       # Создать резервную копию перед очисткой
-    poetry run python clean_fnsi_db.py --help         # Показать справку
+    uv run python clean_fnsi_db.py              # Очистить все таблицы
+    uv run python clean_fnsi_db.py --keep-schema   # Оставить схему, удалить только данные
+    uv run python clean_fnsi_db.py --backup       # Создать резервную копию перед очисткой
+    uv run python clean_fnsi_db.py --help         # Показать справку
 """
 
 import sys
@@ -196,10 +196,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Примеры использования:
-  poetry run python clean_fnsi_db.py              # Полная очистка базы
-  poetry run python clean_fnsi_db.py --keep-schema   # Сохранить схему
-  poetry run python clean_fnsi_db.py --backup       # С резервной копией
-  poetry run python clean_fnsi_db.py --info         # Показать информацию
+  uv run python clean_fnsi_db.py              # Полная очистка базы
+  uv run python clean_fnsi_db.py --keep-schema   # Сохранить схему
+  uv run python clean_fnsi_db.py --backup       # С резервной копией
+  uv run python clean_fnsi_db.py --info         # Показать информацию
         '''
     )
 
