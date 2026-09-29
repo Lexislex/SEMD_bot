@@ -27,6 +27,7 @@ MZRF_CERT_PATH = CERT_DIR / "rosminzdrav.crt"
 # Значения по умолчанию для несекретных параметров проекта
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_ENV = "production"  # "development" | "staging" | "production"
+DEFAULT_GITLAB_URL = "https://git.minzdrav.gov.ru"
 
 
 @dataclass(frozen=True)
@@ -71,6 +72,19 @@ class ExternalAPIsConfig:
 
 
 @dataclass(frozen=True)
+class GitLabConfig:
+    # GitLab Минздрава с пакетами СЭМД (схематроны, XSD, руководства)
+    url: str
+    token: Optional[str]
+    # Таймаут одного запроса к GitLab (сек)
+    request_timeout: int
+    # Количество попыток при таймаутах/5xx GitLab
+    max_retries: int
+    # Использовать PROXY_* для запросов к GitLab
+    use_proxy: bool
+
+
+@dataclass(frozen=True)
 class ProxyConfig:
     enabled: bool
     proxy_type: Optional[str]  # http, https, socks5
@@ -87,6 +101,7 @@ class Config:
     paths: PathsConfig
     apis: ExternalAPIsConfig
     proxy: ProxyConfig
+    gitlab: GitLabConfig
 
 
 # Кеш конфигурации, чтобы не читать .env многократно
@@ -102,6 +117,14 @@ def _read_env(name: str, default: Optional[str] = None) -> Optional[str]:
     if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
         val = val[1:-1]
     return val if val != "" else default
+
+
+def _read_int_env(name: str, default: int, minimum: int) -> int:
+    """Read an integer env variable, falling back to default on invalid input."""
+    try:
+        return max(minimum, int(_read_env(name, str(default))))
+    except ValueError:
+        return default
 
 
 def get_config() -> Config:
@@ -130,6 +153,17 @@ def get_config() -> Config:
         fnsi_max_retries = max(1, int(_fnsi_retries_str))
     except ValueError:
         fnsi_max_retries = 3
+
+    # GitLab Минздрава
+    gitlab_url = _read_env("GITLAB_URL", DEFAULT_GITLAB_URL)
+    gitlab_token = _read_env("GITLAB_TOKEN")
+    gitlab_request_timeout = _read_int_env("GITLAB_REQUEST_TIMEOUT", 30, minimum=5)
+    gitlab_max_retries = _read_int_env("GITLAB_MAX_RETRIES", 3, minimum=1)
+    gitlab_use_proxy = _read_env("GITLAB_USE_PROXY", "false").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
 
     # Настройки прокси
     proxy_enabled = _read_env("PROXY_ENABLED", "false").lower() in ("true", "1", "yes")
@@ -186,11 +220,20 @@ def get_config() -> Config:
         password=proxy_pass,
     )
 
+    gitlab_cfg = GitLabConfig(
+        url=gitlab_url,
+        token=gitlab_token,
+        request_timeout=gitlab_request_timeout,
+        max_retries=gitlab_max_retries,
+        use_proxy=gitlab_use_proxy,
+    )
+
     _CONFIG = Config(
         app=app_cfg,
         accounts=accounts_cfg,
         paths=paths_cfg,
         apis=apis_cfg,
         proxy=proxy_cfg,
+        gitlab=gitlab_cfg,
     )
     return _CONFIG
