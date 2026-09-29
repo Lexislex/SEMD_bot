@@ -16,12 +16,13 @@ def build_url(base_url: str, endpoint: str) -> str:
     return f"{base_url.rstrip('/')}/{endpoint.lstrip('/')}"
 
 
-def build_proxies(url: str = None) -> Optional[Dict[str, str]]:
+def build_proxies(url: str = None, force: bool = False) -> Optional[Dict[str, str]]:
     """
     Формирует словарь с настройками прокси для requests только для nsi.rosminzdrav.ru.
 
     Args:
         url: URL запроса для проверки домена (опционально)
+        force: применять прокси независимо от домена URL (например, для GitLab)
 
     Returns:
         Dict[str, str] или None: словарь с прокси или None, если прокси отключены
@@ -33,7 +34,7 @@ def build_proxies(url: str = None) -> Optional[Dict[str, str]]:
         return None
 
     # Проверяем, что URL относится к nsi.rosminzdrav.ru
-    if url and "nsi.rosminzdrav.ru" not in url:
+    if url and not force and "nsi.rosminzdrav.ru" not in url:
         logger.debug(f"Прокси не используется для {url} (не nsi.rosminzdrav.ru)")
         return None
 
@@ -57,7 +58,7 @@ def build_proxies(url: str = None) -> Optional[Dict[str, str]]:
     }
 
     logger.info(
-        f"Используется прокси для nsi.rosminzdrav.ru: {cfg.proxy.proxy_type}://{cfg.proxy.host}:{cfg.proxy.port}"
+        f"Используется прокси для {url or 'nsi.rosminzdrav.ru'}: {cfg.proxy.proxy_type}://{cfg.proxy.host}:{cfg.proxy.port}"
     )
     return proxies
 
