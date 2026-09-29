@@ -62,6 +62,11 @@ class TaskScheduler:
             elif unit in ("months", "quarters"):
                 # schedule не поддерживает месяцы/кварталы: запускаем ежедневно,
                 # нужный день проверяет сама задача
+                if interval != 1:
+                    self.logger.warning(
+                        f"Задача {task_id}: interval={interval} для {unit} "
+                        f"не поддерживается, используется 1"
+                    )
                 job = schedule.every().day
             else:
                 self.logger.error(f"Неизвестная единица времени: {unit}")

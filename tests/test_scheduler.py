@@ -52,3 +52,10 @@ def test_remove_task(scheduler):
 
     assert schedule.get_jobs("t") == []
     assert len(schedule.get_jobs("other")) == 1
+
+
+def test_interval_for_months_is_warned(scheduler, caplog):
+    with caplog.at_level(logging.WARNING):
+        scheduler.add_task(lambda: None, 2, "months", at="10:00", task_name="t")
+    assert "interval=2" in caplog.text
+    assert len(schedule.get_jobs("t")) == 1
