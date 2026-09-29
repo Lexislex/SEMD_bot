@@ -8,7 +8,7 @@ from telebot.types import CallbackQuery
 from services.fnsi_client import nsi_passport_updater
 from utils.message_manager import get_message_manager
 
-from .data import NSI_DICTIONARIES, NSI_LIST
+from .data import NSI_DICTIONARIES, NSI_LIST, notified_count
 from .formatters import (
     DefaultUpdateFormatter,
     ImportantUpdateFormatter,
@@ -153,7 +153,7 @@ class NSIUpdHandlers:
                 "<b>«СЭМД инфо»</b>\n\n"
                 "🔗 Приглашение в канал:\n"
                 "https://t.me/+QGan41q3n6U1MzJi\n\n"
-                f"✅ Мониторим обновления {len(NSI_LIST)} справочников.\n\n"
+                f"✅ Мониторим обновления {notified_count()} справочников.\n\n"
                 "Для получения уведомлений подпишитесь на канал!"
             )
 
