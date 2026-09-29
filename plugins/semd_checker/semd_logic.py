@@ -326,7 +326,8 @@ class SEMD1520(NsiDictionary):
             logger.error(f"Error getting SEMD versions: {e}")
             return None, f"Ошибка при получении версий: {e}", None, None, None, None
 
-        return self.get_semd_versions_by_type(doc_type)
+        # Тот же снимок df: между вызовами справочник мог перезагрузиться
+        return self._versions_by_type(df, doc_type)
 
     def get_newest_versions(self, count=1):
         """
@@ -427,9 +428,8 @@ class SEMD1520(NsiDictionary):
         Returns:
             tuple: (document_name, versions_table, document_type, link_1520, link_1522, dictionary_version)
         """
-        self._check_and_reload_if_needed()
-
-        if self.df is None:
+        df = self.get_dataframe()
+        if df is None:
             return (
                 None,
                 "Ошибка: не удалось загрузить данные СЭМД",
@@ -438,10 +438,13 @@ class SEMD1520(NsiDictionary):
                 None,
                 None,
             )
+        return self._versions_by_type(df, doc_type)
 
+    def _versions_by_type(self, df: pd.DataFrame, doc_type: int):
+        """Format versions of ``doc_type`` from a snapshot of the dictionary data."""
         try:
             # Find all versions for this TYPE
-            semd_versions = self.df[self.df["TYPE"] == doc_type].copy()
+            semd_versions = df[df["TYPE"] == doc_type].copy()
 
             if semd_versions.empty:
                 return None, f"СЭМД с TYPE {doc_type} не найден", None, None, None, None
