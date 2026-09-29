@@ -16,7 +16,7 @@
 
 **Запуск:**
 ```bash
-poetry run python scripts/testing/test_architecture.py
+uv run python scripts/testing/test_architecture.py
 ```
 
 **Ожидаемый результат:**
@@ -39,13 +39,13 @@ poetry run python scripts/testing/test_architecture.py
 
 ```bash
 # 1. Очистить базы данных
-poetry run python scripts/database/clean_all_db.py --backup
+uv run python scripts/database/clean_all_db.py --backup
 
 # 2. Запустить архитектурный тест
-poetry run python scripts/testing/test_architecture.py
+uv run python scripts/testing/test_architecture.py
 
 # 3. Если тесты пройдены, запустить бота
-poetry run python main.py
+uv run python main.py
 ```
 
 ## 💡 Советы

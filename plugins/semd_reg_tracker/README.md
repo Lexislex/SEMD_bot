@@ -184,7 +184,7 @@ config.UPDS_MAILING_LIST = [chat_id_1, chat_id_2, ...]
 Все компоненты полностью протестированы:
 
 ```bash
-poetry run python << 'EOF'
+uv run python << 'EOF'
 # See full test in test_semd_reg_tracker.py
 EOF
 ```
