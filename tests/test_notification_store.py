@@ -72,7 +72,9 @@ class TestCreateJob:
         [
             # нарушение данных — не «версия уже известна», ошибка должна быть видна
             (None, sqlite3.IntegrityError),
-            ("SELECT RAISE(FAIL, 'disk I/O')", sqlite3.DatabaseError),
+            # ошибка БД посреди транзакции (RAISE(FAIL) даёт IntegrityError,
+            # подкласс DatabaseError) — без задания на версию это не дубль
+            ("SELECT RAISE(FAIL, 'boom')", sqlite3.DatabaseError),
         ],
     )
     def test_failure_rolls_back_passport(self, store, db, trigger_sql, error):
@@ -95,7 +97,8 @@ class TestCreateJob:
         assert rows(db, "SELECT * FROM notification_jobs") == []
 
     def test_losing_writer_rolls_back_its_passport(self, store, db):
-        # гонка: другой writer уже создал задание, а паспорт этот writer ещё не видит
+        # моделирует исход гонки (не саму синхронную гонку потоков): задание на
+        # версию уже есть, а паспорта этот writer не видит — его вставка откатывается
         other = NotificationStore(db)
         other.create_job(INFO, "text", [10], now=NOW)
         with sqlite3.connect(db) as con:
@@ -195,6 +198,37 @@ class TestDeliveries:
         assert store.due_deliveries(now=last_chance - timedelta(seconds=1)) == []
         (due,) = store.due_deliveries(now=last_chance)
         assert not store.is_expired(due, now=last_chance)
+
+    def test_retry_after_is_not_shortened_near_expiry(self, store):
+        # 429 в 23:57 с retry_after=120: раньше 23:59 повторять нельзя,
+        # хотя «последний шанс» своего backoff — 23:58
+        store.create_job(INFO, "text", [10], now=NOW)
+        (delivery,) = store.due_deliveries(now=NOW)
+        at = NOW + MAX_DELIVERY_AGE - timedelta(minutes=3)
+
+        assert store.mark_retry(
+            delivery, "429", now=at, retry_after=timedelta(seconds=120)
+        )
+
+        assert store.due_deliveries(now=at + timedelta(minutes=1)) == []
+        (due,) = store.due_deliveries(now=at + timedelta(minutes=2))
+        assert not store.is_expired(due, now=at + timedelta(minutes=2))
+
+    def test_retry_after_past_expiry_only_expires(self, store):
+        # 429 в 23:59 с retry_after=120: до истечения повторов нет,
+        # на границе строка всплывает только чтобы закрыться без отправки
+        store.create_job(INFO, "text", [10], now=NOW)
+        (delivery,) = store.due_deliveries(now=NOW)
+        at = NOW + MAX_DELIVERY_AGE - timedelta(minutes=1)
+
+        assert store.mark_retry(
+            delivery, "429", now=at, retry_after=timedelta(seconds=120)
+        )
+
+        expiry = NOW + MAX_DELIVERY_AGE
+        assert store.due_deliveries(now=expiry - timedelta(seconds=1)) == []
+        (due,) = store.due_deliveries(now=expiry)
+        assert store.is_expired(due, now=expiry)
 
     def test_gives_up_after_max_age(self, store, db):
         store.create_job(INFO, "text", [10], now=NOW)

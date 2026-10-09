@@ -288,3 +288,47 @@ class TestNotificationRecovery:
             assert restarted.deliver_pending() == 0
         restarted.bot.send_message.assert_not_called()
         assert restarted.store.due_deliveries(now=utc_now() + timedelta(days=3)) == []
+
+
+def test_429_near_expiry_does_not_call_telegram_early(tmp_path):
+    """Handler level: retry_after near TTL is respected, then the row only expires."""
+    from datetime import timedelta
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock, patch
+
+    from telebot.apihelper import ApiTelegramException
+
+    from plugins.nsi_update_checker.handlers import NSIUpdHandlers
+    from services.notification_store import MAX_DELIVERY_AGE, NotificationStore, utc_now
+
+    config = SimpleNamespace(
+        accounts=SimpleNamespace(updates_mailing_list=[10]),
+        paths=SimpleNamespace(fnsi_db_path=tmp_path / "fnsi.sqlite"),
+    )
+    store = NotificationStore(config.paths.fnsi_db_path)
+    created = utc_now()
+    store.create_job(TestNotificationFlow.INFO, "text", [10], now=created)
+    bot = MagicMock()
+    bot.send_message.side_effect = ApiTelegramException(
+        "sendMessage",
+        None,
+        {
+            "error_code": 429,
+            "description": "Too Many Requests",
+            "parameters": {"retry_after": 120},
+        },
+    )
+    handlers = NSIUpdHandlers(bot, config, store=store)
+
+    def run_at(moment):
+        with patch("services.notification_store.utc_now", return_value=moment):
+            return handlers.deliver_pending()
+
+    run_at(
+        created + MAX_DELIVERY_AGE - timedelta(minutes=1)
+    )  # 429, retry_after past expiry
+    assert bot.send_message.call_count == 1
+    run_at(created + MAX_DELIVERY_AGE - timedelta(seconds=10))  # no early retry
+    run_at(created + MAX_DELIVERY_AGE)  # only expiry, no send
+    assert bot.send_message.call_count == 1
+    assert store.due_deliveries(now=created + timedelta(days=3)) == []

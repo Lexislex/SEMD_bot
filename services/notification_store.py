@@ -249,10 +249,17 @@ class NotificationStore:
         if self.is_expired(delivery, now):
             self._finish(delivery, DELIVERY_FAILED, None, error, now, attempts)
             return False
-        delay = retry_after or RETRY_DELAYS[min(attempts, len(RETRY_DELAYS)) - 1]
-        # the last attempt happens just before expiry (the scheduler ticks every minute)
-        last_chance = delivery.job_created_at + MAX_DELIVERY_AGE - LAST_ATTEMPT_MARGIN
-        next_attempt = max(now, min(now + delay, last_chance))
+        expiry = delivery.job_created_at + MAX_DELIVERY_AGE
+        if retry_after is not None:
+            # Telegram flood control: never retry earlier than the server allows.
+            # If that is past expiry, wake up at expiry only to close the delivery.
+            next_attempt = min(now + retry_after, expiry)
+        else:
+            # our own backoff may be shortened so the last attempt happens just
+            # before expiry (the scheduler ticks every minute)
+            delay = RETRY_DELAYS[min(attempts, len(RETRY_DELAYS)) - 1]
+            last_chance = expiry - LAST_ATTEMPT_MARGIN
+            next_attempt = max(now, min(now + delay, last_chance))
         with closing(self._connect()) as con, con:
             con.execute(
                 "UPDATE notification_deliveries "
