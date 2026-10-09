@@ -1,0 +1,4038 @@
+{
+ "compare?date1=2024-12-25 15:26&date2=2025-01-29 11:13&page=1&size=200": {
+  "data": {
+   "list": [
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2025-02-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.8.1",
+     "ID": 65,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/3831",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Справка для получения путевки на санаторно-курортное лечение (CDA) Редакция 1",
+     "OID": "65",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2021-04-12",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "47",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2025-02-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.67.1",
+     "ID": 86,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/3915",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Направление к месту лечения для получения медицинской помощи (CDA) Редакция 1",
+     "OID": "86",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2021-06-30",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "81",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2025-02-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.68.3",
+     "ID": 146,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4313",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Талон № 2 на получение специальных талонов (именных направлений) на проезд к месту лечения для получения медицинской помощи (CDA) Редакция 3",
+     "OID": "146",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2023-04-20",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "106",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2025-02-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.68.1",
+     "ID": 78,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/3905",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Талон № 2 на получение специальных талонов (именных направлений) на проезд к месту лечения для получения медицинской помощи (CDA) Редакция 1",
+     "OID": "78",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2021-06-30",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "106",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.9.3",
+     "ID": 278,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4783",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Санаторно-курортная карта (CDA) Редакция 3",
+     "OID": "278",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2025-01-10",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "48",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.10.3",
+     "ID": 279,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4785",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Санаторно-курортная карта для детей (CDA) Редакция 3",
+     "OID": "279",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2025-01-10",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "50",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.12.3",
+     "ID": 281,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4789",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Обратный талон санаторно-курортной карты для детей (CDA) Редакция 3",
+     "OID": "281",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2025-01-10",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "361",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.11.3",
+     "ID": 280,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4787",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Обратный талон санаторно-курортной карты (CDA) Редакция 3",
+     "OID": "280",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2025-01-10",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "357",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.14.6",
+     "ID": 289,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Протокол консультации в рамках диспансерного наблюдения (CDA) Редакция 6",
+     "OID": "289",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-01-10",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "85",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "INSERT"
+    }
+   ],
+   "total": 9
+  },
+  "fields": null,
+  "keys": null,
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null
+ },
+ "compare?date1=2025-05-28 13:54&date2=2025-06-04 14:32&page=1&size=200": {
+  "data": {
+   "list": [
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.32.1",
+     "ID": 85,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/3913",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Направление на консультацию и во вспомогательные кабинеты (CDA) Редакция 1",
+     "OID": "85",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2021-06-30",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "57",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.32.2",
+     "ID": 185,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4357",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Направление на консультацию и во вспомогательные кабинеты (CDA) Редакция 2",
+     "OID": "185",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2023-08-14",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "57",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.27.3",
+     "ID": 89,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/3921",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Выписной эпикриз из родильного дома (CDA) Редакция 3",
+     "OID": "89",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2021-06-30",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "10",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.27.4",
+     "ID": 205,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4485",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Выписной эпикриз из родильного дома (CDA) Редакция 4",
+     "OID": "205",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2023-12-01",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "10",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2024-08-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.27.2",
+     "ID": 44,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/2925",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Выписной эпикриз из родильного дома (CDA) Редакция 2",
+     "OID": "44",
+     "PATIENT_INFO": "Обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2020-09-14",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "10",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.58.5",
+     "ID": 253,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4703",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Справка о временной нетрудоспособности студента, учащегося техникума, профессионально-технического училища, о болезни, карантине и прочих причинах отсутствия ребенка, посещающего школу, детское дошкольное учреждение (CDA) Редакция 5",
+     "OID": "253",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2024-06-24",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "122",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.44.3",
+     "ID": 248,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4719",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинская справка о состоянии здоровья ребенка, отъезжающего в организацию отдыха детей и их оздоровления (CDA) Редакция 3",
+     "OID": "248",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2024-07-08",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "49",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2025-07-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.58.4",
+     "ID": 169,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4339",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Справка о временной нетрудоспособности студента, учащегося техникума, профессионально-технического училища, о болезни, карантине и прочих причинах отсутствия ребенка, посещающего школу, детское дошкольное учреждение (CDA) Редакция 4",
+     "OID": "169",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2023-08-14",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "122",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2025-07-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.44.2",
+     "ID": 175,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4343",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинская справка о состоянии здоровья ребенка, отъезжающего в организацию отдыха детей и их оздоровления (CDA) Редакция 2",
+     "OID": "175",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2023-08-14",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "49",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2025-07-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.58.2",
+     "ID": 81,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/3909",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Справка о временной нетрудоспособности студента, учащегося техникума, профессионально-технического училища, о болезни, карантине и прочих причинах отсутствия ребенка, посещающего школу, детское дошкольное учреждение (CDA) Редакция 2",
+     "OID": "81",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2021-06-30",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "122",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2025-07-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.44.1",
+     "ID": 87,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/3917",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинская справка о состоянии здоровья ребенка, отъезжающего в организацию отдыха детей и их оздоровления (CDA) Редакция 1",
+     "OID": "87",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2021-06-30",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "49",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": "2025-07-01",
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.28.1",
+     "ID": 129,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4415",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Результаты профилактического медицинского осмотра / диспансеризации (CDA) Редакция 1",
+     "OID": "129",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2023-08-28",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "340",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.28.2",
+     "ID": 228,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/4501",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Результаты профилактического медицинского осмотра / диспансеризации (CDA) Редакция 2",
+     "OID": "228",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Да",
+     "START_DATE": "2024-02-29",
+     "STORAGE_TYPE": "Хранится в МО",
+     "TYPE": "340",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    }
+   ],
+   "total": 13
+  },
+  "fields": null,
+  "keys": null,
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null
+ },
+ "compare?date1=2026-07-31 14:01&date2=2026-08-06 14:39&page=1&size=200": {
+  "data": {
+   "list": [
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.168.1",
+     "ID": 342,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Сообщение о выявлении у иностранного гражданина инфекционного заболевания, представляющего опасность для окружающих, или заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1",
+     "OID": "342",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "578",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.166.1",
+     "ID": 340,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинское заключение об отсутствии инфекционных заболеваний, представляющих опасность для окружающих, и заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1",
+     "OID": "340",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "576",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.170.1",
+     "ID": 344,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинское заключение о наличии (отсутствии) факта употребления иностранным гражданином наркотических средств или психотропных веществ без назначения врача либо новых потенциально опасных психоактивных веществ (CDA) Редакция 1",
+     "OID": "344",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "394",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.167.1",
+     "ID": 341,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинское заключение о наличии инфекционных заболеваний, представляющих опасность для окружающих, и заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1",
+     "OID": "341",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "577",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.169.1",
+     "ID": 343,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Сообщение о наличии факта употребления иностранным гражданином наркотических средств или психотропных веществ без назначения врача либо новых потенциально опасных психоактивных веществ (CDA) Редакция 1",
+     "OID": "343",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "579",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.110.2",
+     "ID": 339,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Заключение межведомственного экспертного совета об установлении (отказе в установлении) причинной связи заболеваний, инвалидности и смерти граждан, подвергшихся воздействию радиационного фактора (CDA) Редакция 2",
+     "OID": "339",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-11-10",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "500",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "INSERT"
+    }
+   ],
+   "total": 6
+  },
+  "fields": null,
+  "keys": null,
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null
+ },
+ "compare?date1=2026-08-06 14:39&date2=2026-08-10 17:32&page=1&size=200": {
+  "data": {
+   "list": [
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.168.1",
+     "ID": 342,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/5286",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Сообщение о выявлении у иностранного гражданина инфекционного заболевания, представляющего опасность для окружающих, или заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1",
+     "OID": "342",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "578",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.166.1",
+     "ID": 340,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/5284",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинское заключение об отсутствии инфекционных заболеваний, представляющих опасность для окружающих, и заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1",
+     "OID": "340",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "576",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.170.1",
+     "ID": 344,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/5282",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинское заключение о наличии (отсутствии) факта употребления иностранным гражданином наркотических средств или психотропных веществ без назначения врача либо новых потенциально опасных психоактивных веществ (CDA) Редакция 1",
+     "OID": "344",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "394",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.167.1",
+     "ID": 341,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/5283",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинское заключение о наличии инфекционных заболеваний, представляющих опасность для окружающих, и заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1",
+     "OID": "341",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "577",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.169.1",
+     "ID": 343,
+     "IMPLEMENTATION_GUIDE": "https://portal.egisz.rosminzdrav.ru/materials/5285",
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Сообщение о наличии факта употребления иностранным гражданином наркотических средств или психотропных веществ без назначения врача либо новых потенциально опасных психоактивных веществ (CDA) Редакция 1",
+     "OID": "343",
+     "PATIENT_INFO": "Не обязательны",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-09-01",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "579",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "UPDATE"
+    }
+   ],
+   "total": 5
+  },
+  "fields": null,
+  "keys": null,
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null
+ },
+ "compare?date1=2026-08-10 17:32&date2=2026-09-30 15:23&page=1&size=200": {
+  "data": {
+   "list": [
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.172.1",
+     "ID": 345,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинское заключение об установлении заключительного диагноза пострадавшего в результате несчастного случая на производстве (CDA) Редакция 1",
+     "OID": "345",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-12-10",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "223",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "INSERT"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.163.1",
+     "ID": 336,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Медицинское заключение о характере полученных повреждений здоровья в результате несчастного случая на производстве и степени их тяжести (CDA) Редакция 1",
+     "OID": "336",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-12-10",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "177",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "INSERT"
+    },
+    {
+     "DAYS_COUNT": null,
+     "END_DATE": null,
+     "EXTENDED_LIFE": "Да",
+     "FORMAT": "2",
+     "GIT_LINK": "1.2.643.5.1.13.13.15.161.1",
+     "ID": 325,
+     "IMPLEMENTATION_GUIDE": null,
+     "IS_ONLINE": "Нет",
+     "LEVEL": "3",
+     "MO_SIGN": "Да",
+     "NAME": "Извещение об установлении диагноза - острое (хроническое) профессиональное заболевание, уточнении или отмене диагноза - острое (хроническое) профессиональное заболевание (CDA) Редакция 1",
+     "OID": "325",
+     "PATIENT_INFO": "Обязательны с указанием СНИЛС",
+     "SERIES_REQUIRED": "Нет",
+     "SHELF_LIFE": "25 лет",
+     "SHOW_PATIENT": "Нет",
+     "START_DATE": "2026-12-10",
+     "STORAGE_TYPE": "Выдается МО",
+     "TYPE": "563",
+     "UNLIMITED_LIFE": "Да",
+     "operation": "INSERT"
+    }
+   ],
+   "total": 3
+  },
+  "fields": null,
+  "keys": null,
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null
+ },
+ "data?filters=OID|129|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "129"
+    },
+    {
+     "column": "OID",
+     "value": "129"
+    },
+    {
+     "column": "TYPE",
+     "value": "340"
+    },
+    {
+     "column": "NAME",
+     "value": "Результаты профилактического медицинского осмотра / диспансеризации (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/4415"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.28.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "28.08.2023"
+    },
+    {
+     "column": "END_DATE",
+     "value": "01.07.2025"
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|146|EQ&page=1&size=2&version=12.64": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "146"
+    },
+    {
+     "column": "OID",
+     "value": "146"
+    },
+    {
+     "column": "TYPE",
+     "value": "106"
+    },
+    {
+     "column": "NAME",
+     "value": "Талон № 2 на получение специальных талонов (именных направлений) на проезд к месту лечения для получения медицинской помощи (CDA) Редакция 3"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/4313"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.68.3"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "20.04.2023"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|169|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "169"
+    },
+    {
+     "column": "OID",
+     "value": "169"
+    },
+    {
+     "column": "TYPE",
+     "value": "122"
+    },
+    {
+     "column": "NAME",
+     "value": "Справка о временной нетрудоспособности студента, учащегося техникума, профессионально-технического училища, о болезни, карантине и прочих причинах отсутствия ребенка, посещающего школу, детское дошкольное учреждение (CDA) Редакция 4"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/4339"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.58.4"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "14.08.2023"
+    },
+    {
+     "column": "END_DATE",
+     "value": "01.07.2025"
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|175|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "175"
+    },
+    {
+     "column": "OID",
+     "value": "175"
+    },
+    {
+     "column": "TYPE",
+     "value": "49"
+    },
+    {
+     "column": "NAME",
+     "value": "Медицинская справка о состоянии здоровья ребенка, отъезжающего в организацию отдыха детей и их оздоровления (CDA) Редакция 2"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/4343"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.44.2"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "14.08.2023"
+    },
+    {
+     "column": "END_DATE",
+     "value": "01.07.2025"
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|185|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "185"
+    },
+    {
+     "column": "OID",
+     "value": "185"
+    },
+    {
+     "column": "TYPE",
+     "value": "57"
+    },
+    {
+     "column": "NAME",
+     "value": "Направление на консультацию и во вспомогательные кабинеты (CDA) Редакция 2"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/4357"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.32.2"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "14.08.2023"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|205|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "205"
+    },
+    {
+     "column": "OID",
+     "value": "205"
+    },
+    {
+     "column": "TYPE",
+     "value": "10"
+    },
+    {
+     "column": "NAME",
+     "value": "Выписной эпикриз из родильного дома (CDA) Редакция 4"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/4485"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.27.4"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "01.12.2023"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|228|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "228"
+    },
+    {
+     "column": "OID",
+     "value": "228"
+    },
+    {
+     "column": "TYPE",
+     "value": "340"
+    },
+    {
+     "column": "NAME",
+     "value": "Результаты профилактического медицинского осмотра / диспансеризации (CDA) Редакция 2"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/4501"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.28.2"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "29.02.2024"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|248|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "248"
+    },
+    {
+     "column": "OID",
+     "value": "248"
+    },
+    {
+     "column": "TYPE",
+     "value": "49"
+    },
+    {
+     "column": "NAME",
+     "value": "Медицинская справка о состоянии здоровья ребенка, отъезжающего в организацию отдыха детей и их оздоровления (CDA) Редакция 3"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/4719"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.44.3"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "08.07.2024"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|253|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "253"
+    },
+    {
+     "column": "OID",
+     "value": "253"
+    },
+    {
+     "column": "TYPE",
+     "value": "122"
+    },
+    {
+     "column": "NAME",
+     "value": "Справка о временной нетрудоспособности студента, учащегося техникума, профессионально-технического училища, о болезни, карантине и прочих причинах отсутствия ребенка, посещающего школу, детское дошкольное учреждение (CDA) Редакция 5"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/4703"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.58.5"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "24.06.2024"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|278|EQ&page=1&size=2&version=12.64": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "278"
+    },
+    {
+     "column": "OID",
+     "value": "278"
+    },
+    {
+     "column": "TYPE",
+     "value": "48"
+    },
+    {
+     "column": "NAME",
+     "value": "Санаторно-курортная карта (CDA) Редакция 3"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.9.3"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "10.01.2025"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|279|EQ&page=1&size=2&version=12.64": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "279"
+    },
+    {
+     "column": "OID",
+     "value": "279"
+    },
+    {
+     "column": "TYPE",
+     "value": "50"
+    },
+    {
+     "column": "NAME",
+     "value": "Санаторно-курортная карта для детей (CDA) Редакция 3"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.10.3"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "10.01.2025"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|280|EQ&page=1&size=2&version=12.64": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "280"
+    },
+    {
+     "column": "OID",
+     "value": "280"
+    },
+    {
+     "column": "TYPE",
+     "value": "357"
+    },
+    {
+     "column": "NAME",
+     "value": "Обратный талон санаторно-курортной карты (CDA) Редакция 3"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.11.3"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "10.01.2025"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|281|EQ&page=1&size=2&version=12.64": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "281"
+    },
+    {
+     "column": "OID",
+     "value": "281"
+    },
+    {
+     "column": "TYPE",
+     "value": "361"
+    },
+    {
+     "column": "NAME",
+     "value": "Обратный талон санаторно-курортной карты для детей (CDA) Редакция 3"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.12.3"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "10.01.2025"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|340|EQ&page=1&size=2&version=12.93": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "340"
+    },
+    {
+     "column": "OID",
+     "value": "340"
+    },
+    {
+     "column": "TYPE",
+     "value": "576"
+    },
+    {
+     "column": "NAME",
+     "value": "Медицинское заключение об отсутствии инфекционных заболеваний, представляющих опасность для окружающих, и заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.166.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "10.11.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|340|EQ&page=1&size=2&version=12.94": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "340"
+    },
+    {
+     "column": "OID",
+     "value": "340"
+    },
+    {
+     "column": "TYPE",
+     "value": "576"
+    },
+    {
+     "column": "NAME",
+     "value": "Медицинское заключение об отсутствии инфекционных заболеваний, представляющих опасность для окружающих, и заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.166.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "01.09.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|341|EQ&page=1&size=2&version=12.93": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "341"
+    },
+    {
+     "column": "OID",
+     "value": "341"
+    },
+    {
+     "column": "TYPE",
+     "value": "577"
+    },
+    {
+     "column": "NAME",
+     "value": "Медицинское заключение о наличии инфекционных заболеваний, представляющих опасность для окружающих, и заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.167.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "10.11.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|341|EQ&page=1&size=2&version=12.94": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "341"
+    },
+    {
+     "column": "OID",
+     "value": "341"
+    },
+    {
+     "column": "TYPE",
+     "value": "577"
+    },
+    {
+     "column": "NAME",
+     "value": "Медицинское заключение о наличии инфекционных заболеваний, представляющих опасность для окружающих, и заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.167.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "01.09.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|342|EQ&page=1&size=2&version=12.93": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "342"
+    },
+    {
+     "column": "OID",
+     "value": "342"
+    },
+    {
+     "column": "TYPE",
+     "value": "578"
+    },
+    {
+     "column": "NAME",
+     "value": "Сообщение о выявлении у иностранного гражданина инфекционного заболевания, представляющего опасность для окружающих, или заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.168.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "10.11.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|342|EQ&page=1&size=2&version=12.94": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "342"
+    },
+    {
+     "column": "OID",
+     "value": "342"
+    },
+    {
+     "column": "TYPE",
+     "value": "578"
+    },
+    {
+     "column": "NAME",
+     "value": "Сообщение о выявлении у иностранного гражданина инфекционного заболевания, представляющего опасность для окружающих, или заболевания, вызываемого вирусом иммунодефицита человека (ВИЧ-инфекции) (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.168.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "01.09.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|343|EQ&page=1&size=2&version=12.93": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "343"
+    },
+    {
+     "column": "OID",
+     "value": "343"
+    },
+    {
+     "column": "TYPE",
+     "value": "579"
+    },
+    {
+     "column": "NAME",
+     "value": "Сообщение о наличии факта употребления иностранным гражданином наркотических средств или психотропных веществ без назначения врача либо новых потенциально опасных психоактивных веществ (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.169.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "10.11.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|343|EQ&page=1&size=2&version=12.94": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "343"
+    },
+    {
+     "column": "OID",
+     "value": "343"
+    },
+    {
+     "column": "TYPE",
+     "value": "579"
+    },
+    {
+     "column": "NAME",
+     "value": "Сообщение о наличии факта употребления иностранным гражданином наркотических средств или психотропных веществ без назначения врача либо новых потенциально опасных психоактивных веществ (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.169.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "01.09.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|344|EQ&page=1&size=2&version=12.93": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "344"
+    },
+    {
+     "column": "OID",
+     "value": "344"
+    },
+    {
+     "column": "TYPE",
+     "value": "394"
+    },
+    {
+     "column": "NAME",
+     "value": "Медицинское заключение о наличии (отсутствии) факта употребления иностранным гражданином наркотических средств или психотропных веществ без назначения врача либо новых потенциально опасных психоактивных веществ (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.170.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "10.11.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|344|EQ&page=1&size=2&version=12.94": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "344"
+    },
+    {
+     "column": "OID",
+     "value": "344"
+    },
+    {
+     "column": "TYPE",
+     "value": "394"
+    },
+    {
+     "column": "NAME",
+     "value": "Медицинское заключение о наличии (отсутствии) факта употребления иностранным гражданином наркотических средств или психотропных веществ без назначения врача либо новых потенциально опасных психоактивных веществ (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": null
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.170.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "01.09.2026"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|44|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "44"
+    },
+    {
+     "column": "OID",
+     "value": "44"
+    },
+    {
+     "column": "TYPE",
+     "value": "10"
+    },
+    {
+     "column": "NAME",
+     "value": "Выписной эпикриз из родильного дома (CDA) Редакция 2"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/2925"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.27.2"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "14.09.2020"
+    },
+    {
+     "column": "END_DATE",
+     "value": "01.08.2024"
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|65|EQ&page=1&size=2&version=12.64": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "65"
+    },
+    {
+     "column": "OID",
+     "value": "65"
+    },
+    {
+     "column": "TYPE",
+     "value": "47"
+    },
+    {
+     "column": "NAME",
+     "value": "Справка для получения путевки на санаторно-курортное лечение (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/3831"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.8.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "12.04.2021"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|78|EQ&page=1&size=2&version=12.64": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "78"
+    },
+    {
+     "column": "OID",
+     "value": "78"
+    },
+    {
+     "column": "TYPE",
+     "value": "106"
+    },
+    {
+     "column": "NAME",
+     "value": "Талон № 2 на получение специальных талонов (именных направлений) на проезд к месту лечения для получения медицинской помощи (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/3905"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.68.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "30.06.2021"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|81|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "81"
+    },
+    {
+     "column": "OID",
+     "value": "81"
+    },
+    {
+     "column": "TYPE",
+     "value": "122"
+    },
+    {
+     "column": "NAME",
+     "value": "Справка о временной нетрудоспособности студента, учащегося техникума, профессионально-технического училища, о болезни, карантине и прочих причинах отсутствия ребенка, посещающего школу, детское дошкольное учреждение (CDA) Редакция 2"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/3909"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.58.2"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "30.06.2021"
+    },
+    {
+     "column": "END_DATE",
+     "value": "01.07.2025"
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|85|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "85"
+    },
+    {
+     "column": "OID",
+     "value": "85"
+    },
+    {
+     "column": "TYPE",
+     "value": "57"
+    },
+    {
+     "column": "NAME",
+     "value": "Направление на консультацию и во вспомогательные кабинеты (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/3913"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.32.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "30.06.2021"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|86|EQ&page=1&size=2&version=12.64": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "86"
+    },
+    {
+     "column": "OID",
+     "value": "86"
+    },
+    {
+     "column": "TYPE",
+     "value": "81"
+    },
+    {
+     "column": "NAME",
+     "value": "Направление к месту лечения для получения медицинской помощи (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/3915"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.67.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "30.06.2021"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|87|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "87"
+    },
+    {
+     "column": "OID",
+     "value": "87"
+    },
+    {
+     "column": "TYPE",
+     "value": "49"
+    },
+    {
+     "column": "NAME",
+     "value": "Медицинская справка о состоянии здоровья ребенка, отъезжающего в организацию отдыха детей и их оздоровления (CDA) Редакция 1"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Обязательны с указанием СНИЛС"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Выдается МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/3917"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.44.1"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "30.06.2021"
+    },
+    {
+     "column": "END_DATE",
+     "value": "01.07.2025"
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "data?filters=OID|89|EQ&page=1&size=2&version=12.70": {
+  "list": [
+   [
+    {
+     "column": "ID",
+     "value": "89"
+    },
+    {
+     "column": "OID",
+     "value": "89"
+    },
+    {
+     "column": "TYPE",
+     "value": "10"
+    },
+    {
+     "column": "NAME",
+     "value": "Выписной эпикриз из родильного дома (CDA) Редакция 3"
+    },
+    {
+     "column": "LEVEL",
+     "value": "3"
+    },
+    {
+     "column": "PATIENT_INFO",
+     "value": "Не обязательны"
+    },
+    {
+     "column": "SHELF_LIFE",
+     "value": "25 лет"
+    },
+    {
+     "column": "STORAGE_TYPE",
+     "value": "Хранится в МО"
+    },
+    {
+     "column": "EXTENDED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "UNLIMITED_LIFE",
+     "value": "Да"
+    },
+    {
+     "column": "MO_SIGN",
+     "value": "Да"
+    },
+    {
+     "column": "FORMAT",
+     "value": "2"
+    },
+    {
+     "column": "IMPLEMENTATION_GUIDE",
+     "value": "https://portal.egisz.rosminzdrav.ru/materials/3921"
+    },
+    {
+     "column": "GIT_LINK",
+     "value": "1.2.643.5.1.13.13.15.27.3"
+    },
+    {
+     "column": "SHOW_PATIENT",
+     "value": "Нет"
+    },
+    {
+     "column": "IS_ONLINE",
+     "value": "Нет"
+    },
+    {
+     "column": "DAYS_COUNT",
+     "value": null
+    },
+    {
+     "column": "SERIES_REQUIRED",
+     "value": "Нет"
+    },
+    {
+     "column": "START_DATE",
+     "value": "30.06.2021"
+    },
+    {
+     "column": "END_DATE",
+     "value": null
+    }
+   ]
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 1
+ },
+ "versions?page=1&size=50": {
+  "list": [
+   {
+    "archive": false,
+    "createDate": "19.02.2018",
+    "lastUpdate": "30.09.2026 15:23",
+    "publishDate": "30.09.2026 15:23",
+    "version": "12.96"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "10.08.2026 17:32",
+    "publishDate": "10.08.2026 17:32",
+    "version": "12.95"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "06.08.2026 14:39",
+    "publishDate": "06.08.2026 14:39",
+    "version": "12.94"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "31.07.2026 14:01",
+    "publishDate": "31.07.2026 14:01",
+    "version": "12.93"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "28.07.2026 10:26",
+    "publishDate": "28.07.2026 10:26",
+    "version": "12.92"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "20.07.2026 15:44",
+    "publishDate": "20.07.2026 15:44",
+    "version": "12.91"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "09.07.2026 18:52",
+    "publishDate": "09.07.2026 18:52",
+    "version": "12.90"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "29.06.2026 15:05",
+    "publishDate": "29.06.2026 15:05",
+    "version": "12.89"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "08.06.2026 17:55",
+    "publishDate": "08.06.2026 17:55",
+    "version": "12.88"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "21.05.2026 17:06",
+    "publishDate": "21.05.2026 17:06",
+    "version": "12.87"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "28.04.2026 18:41",
+    "publishDate": "28.04.2026 18:41",
+    "version": "12.86"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "08.04.2026 15:25",
+    "publishDate": "08.04.2026 15:25",
+    "version": "12.85"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "25.03.2026 17:20",
+    "publishDate": "25.03.2026 17:20",
+    "version": "12.84"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "25.02.2026 17:24",
+    "publishDate": "25.02.2026 17:24",
+    "version": "12.83"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "26.01.2026 12:24",
+    "publishDate": "26.01.2026 12:24",
+    "version": "12.82"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "30.12.2025 12:09",
+    "publishDate": "30.12.2025 12:09",
+    "version": "12.81"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "25.12.2025 15:11",
+    "publishDate": "25.12.2025 15:11",
+    "version": "12.80"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "27.11.2025 16:04",
+    "publishDate": "27.11.2025 16:04",
+    "version": "12.79"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "12.11.2025 18:27",
+    "publishDate": "12.11.2025 18:27",
+    "version": "12.78"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "28.10.2025 10:12",
+    "publishDate": "28.10.2025 10:12",
+    "version": "12.77"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "19.09.2025 14:20",
+    "publishDate": "19.09.2025 14:20",
+    "version": "12.76"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "03.09.2025 13:58",
+    "publishDate": "03.09.2025 13:58",
+    "version": "12.75"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "26.08.2025 15:46",
+    "publishDate": "26.08.2025 15:46",
+    "version": "12.74"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "18.08.2025 14:12",
+    "publishDate": "18.08.2025 14:12",
+    "version": "12.73"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "28.07.2025 12:15",
+    "publishDate": "28.07.2025 12:15",
+    "version": "12.72"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "04.06.2025 14:32",
+    "publishDate": "04.06.2025 14:32",
+    "version": "12.71"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "28.05.2025 13:54",
+    "publishDate": "28.05.2025 13:54",
+    "version": "12.70"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "15.04.2025 12:28",
+    "publishDate": "15.04.2025 12:28",
+    "version": "12.69"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "20.03.2025 12:14",
+    "publishDate": "20.03.2025 12:14",
+    "version": "12.68"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "17.03.2025 17:53",
+    "publishDate": "17.03.2025 17:53",
+    "version": "12.67"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "12.02.2025 11:09",
+    "publishDate": "12.02.2025 11:09",
+    "version": "12.66"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "29.01.2025 11:13",
+    "publishDate": "29.01.2025 11:13",
+    "version": "12.65"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "25.12.2024 15:26",
+    "publishDate": "25.12.2024 15:26",
+    "version": "12.64"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "17.12.2024 11:52",
+    "publishDate": "17.12.2024 11:52",
+    "version": "12.63"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "06.12.2024 16:58",
+    "publishDate": "06.12.2024 16:58",
+    "version": "12.62"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "04.12.2024 10:59",
+    "publishDate": "04.12.2024 10:59",
+    "version": "12.61"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "21.11.2024 14:21",
+    "publishDate": "21.11.2024 14:21",
+    "version": "12.60"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "07.11.2024 11:10",
+    "publishDate": "07.11.2024 11:10",
+    "version": "12.59"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "01.11.2024 17:30",
+    "publishDate": "01.11.2024 17:30",
+    "version": "12.58"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "24.10.2024 13:40",
+    "publishDate": "24.10.2024 13:40",
+    "version": "12.57"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "08.10.2024 18:04",
+    "publishDate": "08.10.2024 18:04",
+    "version": "12.56"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "01.10.2024 11:54",
+    "publishDate": "01.10.2024 11:54",
+    "version": "12.55"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "27.09.2024 11:36",
+    "publishDate": "27.09.2024 11:36",
+    "version": "12.54"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "23.09.2024 14:31",
+    "publishDate": "23.09.2024 14:31",
+    "version": "12.53"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "17.09.2024 17:30",
+    "publishDate": "17.09.2024 17:30",
+    "version": "12.52"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "05.09.2024 16:16",
+    "publishDate": "05.09.2024 16:16",
+    "version": "12.51"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "28.08.2024 11:43",
+    "publishDate": "28.08.2024 11:43",
+    "version": "12.50"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "20.08.2024 19:00",
+    "publishDate": "20.08.2024 19:00",
+    "version": "12.49"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "04.07.2024 15:38",
+    "publishDate": "04.07.2024 15:38",
+    "version": "12.48"
+   },
+   {
+    "archive": true,
+    "createDate": "19.02.2018",
+    "lastUpdate": "02.07.2024 10:30",
+    "publishDate": "02.07.2024 10:30",
+    "version": "12.47"
+   }
+  ],
+  "result": "OK",
+  "resultCode": null,
+  "resultText": null,
+  "total": 200
+ }
+}

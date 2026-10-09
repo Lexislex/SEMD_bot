@@ -7,6 +7,13 @@ from plugins.nsi_update_checker.formatters import (
     MinorUpdateFormatter,
 )
 
+
+@pytest.fixture(autouse=True)
+def no_annotators(monkeypatch):
+    """Delivery tests here use 1520 as a sample; annotation has its own tests."""
+    monkeypatch.setattr("plugins.nsi_update_checker.handlers.ANNOTATORS", {})
+
+
 FNSI_INFO = {
     "id": "1.2.643.5.1.13.13.11.1520",
     "fullName": "Электронные медицинские документы",

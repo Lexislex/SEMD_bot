@@ -1,7 +1,7 @@
 # Настройка логирования
 import logging
 from datetime import datetime
-from time import sleep
+from time import monotonic, sleep
 from typing import Optional
 
 import requests
@@ -238,6 +238,106 @@ def fetch_new_version(fnsi_oid: str) -> Optional[dict]:
         logger.error(f"Неожиданная ошибка при обновлении справочника {fnsi_oid}: {e}")
         logger.exception(f"Детали исключения для {fnsi_oid}")
         return None
+
+
+class FnsiBudgetExceeded(Exception):
+    """The overall time or request budget of a task is exhausted."""
+
+
+class FnsiApiError(Exception):
+    """FNSI did not return a usable response (the message never contains userKey)."""
+
+
+class FnsiApi:
+    """
+    FNSI REST client with one overall budget for a task.
+
+    Every request timeout is capped by the time left; a retry is skipped when it
+    no longer fits. Error messages carry the endpoint, never the URL with userKey.
+    """
+
+    RETRY_STATUSES = {429, 500, 502, 503, 504}
+
+    def __init__(
+        self,
+        identifier: str,
+        deadline: float,
+        max_requests: int = 100,
+        max_retries: int = 3,
+        session: Optional[requests.Session] = None,
+    ):
+        """
+        Args:
+            identifier: dictionary OID
+            deadline: absolute ``time.monotonic()`` value when the task must stop
+            max_requests: cap on HTTP requests for the task (retries included)
+        """
+        cfg = get_config()
+        if not cfg.apis.fnsi_api_key:
+            raise ValueError("Отсутствует FNSI_API_KEY в конфигурации")
+        self.identifier = identifier
+        self.deadline = deadline
+        self.max_requests = max_requests
+        self.max_retries = max(1, max_retries)
+        self.requests_made = 0
+        self._cfg = cfg
+        self._session = session or requests.Session()
+
+    def remaining(self) -> float:
+        return self.deadline - monotonic()
+
+    def get(self, endpoint: str, **params) -> dict:
+        """GET an endpoint and return the decoded envelope with ``result == "OK"``."""
+        url = build_url(self._cfg.apis.fnsi_api_url, endpoint)
+        query = {
+            "userKey": self._cfg.apis.fnsi_api_key,
+            "identifier": self.identifier,
+            **params,
+        }
+        last_error = "no attempt"
+        for attempt in range(1, self.max_retries + 1):
+            if self.requests_made >= self.max_requests:
+                raise FnsiBudgetExceeded(f"{endpoint}: request budget exhausted")
+            left = self.remaining()
+            if left <= 1:
+                raise FnsiBudgetExceeded(
+                    f"{endpoint}: time budget exhausted ({last_error})"
+                )
+            self.requests_made += 1
+            try:
+                response = self._session.get(
+                    url,
+                    params=query,
+                    verify=str(self._cfg.paths.mzrf_cert_path),
+                    proxies=build_proxies(url),
+                    timeout=min(self._cfg.apis.fnsi_request_timeout, left),
+                )
+            except requests.RequestException as e:
+                # str(e) may contain the full URL with userKey
+                last_error = type(e).__name__
+            else:
+                if response.status_code in self.RETRY_STATUSES:
+                    last_error = f"HTTP {response.status_code}"
+                elif response.status_code != 200:
+                    raise FnsiApiError(f"{endpoint}: HTTP {response.status_code}")
+                else:
+                    return self._envelope(endpoint, response)
+            delay = backoff_delay(attempt, _DEFAULT_FNSI_RETRY_DELAY)
+            if attempt == self.max_retries or delay >= self.remaining() - 1:
+                break
+            sleep(delay)
+        raise FnsiApiError(f"{endpoint}: {last_error}")
+
+    @staticmethod
+    def _envelope(endpoint: str, response: requests.Response) -> dict:
+        try:
+            data = response.json()
+        except ValueError as e:
+            raise FnsiApiError(f"{endpoint}: invalid JSON") from e
+        if not isinstance(data, dict) or data.get("result") != "OK":
+            detail = data.get("resultText") if isinstance(data, dict) else type(data)
+            raise FnsiApiError(f"{endpoint}: result is not OK ({detail})")
+        return data
 
 
 if __name__ == "__main__":
