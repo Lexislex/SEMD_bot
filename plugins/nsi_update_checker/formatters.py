@@ -139,6 +139,37 @@ class FullUpdateFormatter(UpdateMessageFormatter):
                 f"Версия: <code>{escape(str(fnsi_info.get('version', 'Unknown')))}</code>\n"
             )
 
+    def format_annotated(
+        self, fnsi_info: dict, nsi_oid: str, predecessor: str, annotation_html: str
+    ) -> str:
+        """
+        Полный формат с аннотацией вместо счётчиков releaseNotes.
+
+        Ошибки не подавляются: вызывающий код в этом случае отправляет
+        обычное уведомление.
+
+        Args:
+            predecessor: предыдущая версия (пара показывается явно)
+            annotation_html: готовый HTML блока «Что изменилось»
+        """
+        date_str = parser.parse(fnsi_info["lastUpdate"]).strftime("%H:%M %d.%m.%Y")
+        hashtags = self.get_hashtags(fnsi_info, nsi_oid)
+        message = (
+            f"{self.TITLE}\n\n"
+            f"📋 <b>{escape(str(fnsi_info['shortName']))}</b>\n"
+            f"ID: <code>{escape(str(fnsi_info['id']))}</code>\n"
+            f"Версия: <code>{escape(predecessor)}</code> → "
+            f"<code>{escape(str(fnsi_info['version']))}</code>\n"
+            f"Время: {date_str}\n"
+            f"\n💡 <i>Что изменилось:</i>\n"
+            f"{annotation_html}\n"
+            f"\n🔗 <a href='{escape(passport_url(fnsi_info))}'>"
+            f"Перейти к справочнику</a>"
+        )
+        if hashtags:
+            message += f"\n\n{hashtags}"
+        return message
+
 
 class ImportantUpdateFormatter(FullUpdateFormatter):
     """Важные обновления: справочники, влияющие на критичные системы."""

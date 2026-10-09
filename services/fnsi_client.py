@@ -1,7 +1,9 @@
 # Настройка логирования
+import json
 import logging
+import re
 from datetime import datetime
-from time import sleep
+from time import monotonic, sleep
 from typing import Optional
 
 import requests
@@ -238,6 +240,157 @@ def fetch_new_version(fnsi_oid: str) -> Optional[dict]:
         logger.error(f"Неожиданная ошибка при обновлении справочника {fnsi_oid}: {e}")
         logger.exception(f"Детали исключения для {fnsi_oid}")
         return None
+
+
+_USER_KEY_RE = re.compile(r"(userKey=)[^&\s'\"]+", re.IGNORECASE)
+
+
+def redact(text: str) -> str:
+    """Mask the FNSI API key in a free-text message before logging or storing it."""
+    text = _USER_KEY_RE.sub(r"\1****", text)
+    key = get_config().apis.fnsi_api_key
+    return text.replace(key, "****") if key else text
+
+
+class FnsiBudgetExceeded(Exception):
+    """The overall time or request budget of a task is exhausted."""
+
+
+class FnsiApiError(Exception):
+    """FNSI did not return a usable response (the message never contains userKey)."""
+
+
+class FnsiApi:
+    """
+    FNSI REST client with one overall budget for a task.
+
+    Every request timeout is capped by the time left; a retry is skipped when it
+    no longer fits. Error messages carry the endpoint, never the URL with userKey.
+    """
+
+    RETRY_STATUSES = {429, 500, 502, 503, 504}
+    MAX_BODY_BYTES = 20 * 1024 * 1024
+
+    def __init__(
+        self,
+        identifier: str,
+        deadline: float,
+        max_requests: int = 100,
+        max_retries: int = 3,
+        session: Optional[requests.Session] = None,
+    ):
+        """
+        Args:
+            identifier: dictionary OID
+            deadline: absolute ``time.monotonic()`` value when the task must stop
+            max_requests: cap on HTTP requests for the task (retries included)
+        """
+        cfg = get_config()
+        if not cfg.apis.fnsi_api_key:
+            raise ValueError("Отсутствует FNSI_API_KEY в конфигурации")
+        self.identifier = identifier
+        self.deadline = deadline
+        self.max_requests = max_requests
+        self.max_retries = max(1, max_retries)
+        self.requests_made = 0
+        self._cfg = cfg
+        self._session = session or requests.Session()
+
+    def remaining(self) -> float:
+        return self.deadline - monotonic()
+
+    def get(self, endpoint: str, **params) -> dict:
+        """GET an endpoint and return the decoded envelope with ``result == "OK"``."""
+        url = build_url(self._cfg.apis.fnsi_api_url, endpoint)
+        query = {
+            "userKey": self._cfg.apis.fnsi_api_key,
+            "identifier": self.identifier,
+            **params,
+        }
+        last_error = "no attempt"
+        for attempt in range(1, self.max_retries + 1):
+            if self.requests_made >= self.max_requests:
+                raise FnsiBudgetExceeded(f"{endpoint}: request budget exhausted")
+            left = self.remaining()
+            if left <= 1:
+                raise FnsiBudgetExceeded(
+                    f"{endpoint}: time budget exhausted ({last_error})"
+                )
+            self.requests_made += 1
+            try:
+                response = self._session.get(
+                    url,
+                    params=query,
+                    verify=str(self._cfg.paths.mzrf_cert_path),
+                    proxies=build_proxies(url),
+                    timeout=min(self._cfg.apis.fnsi_request_timeout, left),
+                    stream=True,
+                    # no compression: a decoder may read the socket many times
+                    # before returning data, bypassing the budget checks
+                    headers={"Accept-Encoding": "identity"},
+                )
+                try:
+                    if response.status_code in self.RETRY_STATUSES:
+                        last_error = f"HTTP {response.status_code}"
+                    elif response.status_code != 200:
+                        raise FnsiApiError(f"{endpoint}: HTTP {response.status_code}")
+                    else:
+                        return self._envelope(
+                            endpoint, self._read_body(endpoint, response)
+                        )
+                finally:
+                    response.close()
+            except requests.RequestException as e:
+                # str(e) may contain the full URL with userKey
+                last_error = type(e).__name__
+            delay = backoff_delay(attempt, _DEFAULT_FNSI_RETRY_DELAY)
+            if attempt == self.max_retries or delay >= self.remaining() - 1:
+                break
+            sleep(delay)
+        raise FnsiApiError(f"{endpoint}: {last_error}")
+
+    def _read_body(self, endpoint: str, response: requests.Response) -> bytes:
+        """Read the body within the budget.
+
+        The requests timeout limits one socket wait, not the whole download, and
+        ``iter_content`` returns only after filling its chunk, so a server sending
+        a byte at a time would never hand control back. ``read1`` returns after a
+        single socket read (no decoder: the body is requested uncompressed and a
+        compressed one is refused): the budget is checked after every read, and
+        one wait is bounded by the request timeout (capped by the budget left).
+        """
+        encoding = (response.headers.get("Content-Encoding") or "identity").lower()
+        if encoding != "identity":
+            raise FnsiApiError(f"{endpoint}: unexpected Content-Encoding {encoding}")
+        chunks, size = [], 0
+        while True:
+            chunk = response.raw.read1(65536, decode_content=False)
+            if not chunk:
+                break  # EOF; a truncated body fails JSON decoding
+            size += len(chunk)
+            if size > self.MAX_BODY_BYTES:
+                raise FnsiApiError(
+                    f"{endpoint}: response larger than {self.MAX_BODY_BYTES} bytes"
+                )
+            chunks.append(chunk)
+            if self.remaining() <= 0:
+                raise FnsiBudgetExceeded(
+                    f"{endpoint}: time budget exhausted while reading"
+                )
+        return b"".join(chunks)
+
+    @staticmethod
+    def _envelope(endpoint: str, body: bytes) -> dict:
+        try:
+            data = json.loads(body)
+        except ValueError as e:
+            raise FnsiApiError(f"{endpoint}: invalid JSON") from e
+        if not isinstance(data, dict) or data.get("result") != "OK":
+            # resultText is free text from the server: never log it as is
+            code = data.get("resultCode") if isinstance(data, dict) else None
+            code = code if isinstance(code, int) or str(code).isdigit() else None
+            raise FnsiApiError(f"{endpoint}: result is not OK (code {code})")
+        return data
 
 
 if __name__ == "__main__":
