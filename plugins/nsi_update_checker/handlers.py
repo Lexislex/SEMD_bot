@@ -1,5 +1,6 @@
 import logging
 import time
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
 
@@ -151,6 +152,7 @@ class NSIUpdHandlers:
                 api.get,
                 fnsi_info["version"],
                 max_chars=MESSAGE_LIMIT - tg_length(frame),
+                release_notes=fnsi_info.get("releaseNotes"),
             )
             text = formatter.format_annotated(
                 fnsi_info, nsi_oid, annotation.predecessor, annotation.html
@@ -162,7 +164,10 @@ class NSIUpdHandlers:
         except (FnsiApiError, FnsiBudgetExceeded) as e:
             self._finalize_plain(job_id, release, "failed", str(e))
         except Exception as e:
-            self.logger.exception(f"Ошибка аннотации {release}: {redact(str(e))}")
+            # не logger.exception: traceback содержит исходный текст исключения
+            self.logger.error(
+                f"Ошибка аннотации {release}: {redact(traceback.format_exc())}"
+            )
             self._finalize_plain(job_id, release, "failed", f"{type(e).__name__}: {e}")
         else:
             if self.store.finalize_job(job_id, "complete", payload=text):

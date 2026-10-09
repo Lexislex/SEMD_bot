@@ -349,11 +349,17 @@ class FnsiApi:
     def _read_body(self, endpoint: str, response: requests.Response) -> bytes:
         """Read the body within the budget.
 
-        The requests timeout limits a pause between bytes, not the whole
-        download, so a slowly trickling response is cut by the deadline here.
+        The requests timeout limits one socket wait, not the whole download, and
+        ``iter_content`` returns only after filling its chunk, so a server sending
+        a byte at a time would never hand control back. ``read1`` returns after a
+        single socket read: the budget is checked after every read, and one wait
+        is bounded by the request timeout (capped by the budget left).
         """
         chunks, size = [], 0
-        for chunk in response.iter_content(chunk_size=65536):
+        while True:
+            chunk = response.raw.read1(65536, decode_content=True)
+            if not chunk:
+                break  # EOF; a truncated body fails JSON decoding
             size += len(chunk)
             if size > self.MAX_BODY_BYTES:
                 raise FnsiApiError(
@@ -364,8 +370,6 @@ class FnsiApi:
                 raise FnsiBudgetExceeded(
                     f"{endpoint}: time budget exhausted while reading"
                 )
-        if self.remaining() <= 0:
-            raise FnsiBudgetExceeded(f"{endpoint}: time budget exhausted while reading")
         return b"".join(chunks)
 
     @staticmethod

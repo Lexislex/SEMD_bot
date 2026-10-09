@@ -33,12 +33,13 @@ INFO = {
 
 
 def response(status=200, payload=None, chunks=None):
-    """Streamed response: the body is read through iter_content."""
+    """Streamed response: the body is read through raw.read1."""
     resp = MagicMock(status_code=status)
     body = json.dumps(
         payload if payload is not None else {"result": "OK", "list": []}
     ).encode()
-    resp.iter_content.return_value = chunks if chunks is not None else [body]
+    parts = list(chunks) if chunks is not None else [body]
+    resp.raw.read1.side_effect = lambda *a, **k: parts.pop(0) if parts else b""
     return resp
 
 
@@ -99,23 +100,47 @@ class TestFnsiApi:
         assert "ConnectionError" in str(err.value)
 
     def test_trickling_body_is_cut_by_deadline(self):
-        # timeout ограничивает паузу между байтами, а не всю загрузку:
-        # тело приходит кусками, а время уже вышло
+        """Real requests/urllib3 objects; the server sends one byte per socket read.
+
+        iter_content(65536) would only return after the whole 64 KB chunk (or EOF);
+        read1 returns after each read, so the budget is checked mid-body.
+        """
+        import io
+
+        from urllib3.response import HTTPResponse
+
         now = [0.0]
 
-        def body():
-            yield b'{"result"'
-            now[0] = 50.0  # между кусками прошло больше бюджета
-            yield b': "OK"}'
+        class Trickle(io.RawIOBase):
+            def __init__(self, data):
+                self.data = data
 
-        resp = response()
-        resp.iter_content.return_value = body()
+            def readable(self):
+                return True
+
+            def readinto(self, buffer):
+                if not self.data:
+                    return 0
+                now[0] += 1.0  # each byte takes a second
+                buffer[0] = self.data[0]
+                self.data = self.data[1:]
+                return 1
+
+        body = json.dumps({"result": "OK", "list": ["x" * 80]}).encode()
+        raw = HTTPResponse(
+            body=io.BufferedReader(Trickle(body), buffer_size=1),
+            preload_content=False,
+            status=200,
+        )
+        resp = requests.Response()
+        resp.status_code = 200
+        resp.raw = raw
         with patch("services.fnsi_client.monotonic", side_effect=lambda: now[0]):
             api, _ = self.make([resp], deadline=0)
             api.deadline = 10.0
             with pytest.raises(FnsiBudgetExceeded, match="while reading"):
                 api.get("compare")
-        resp.close.assert_called_once()
+        assert now[0] <= 11  # stopped right after the budget, not after ~100 bytes
 
     def test_server_text_is_not_in_error(self):
         api, _ = self.make(
@@ -324,3 +349,55 @@ class TestDeadlineAndRedaction:
 
         assert "SYNTHETIC" not in job_row(handlers)[2]
         assert "userKey=****" in job_row(handlers)[2]
+
+
+class TestReviewRegressions:
+    def test_counters_are_checked_in_the_real_flow(self, make_handlers):
+        """Handler passes FNSI counters to the real 1520 annotator."""
+        from plugins.nsi_update_checker.annotation_1520 import build_1520_annotation
+        from tests.test_annotation_1520 import FakeApi, compare_key
+
+        def drop_row(data):
+            payload = data[compare_key(data, "2026-08-10")]["data"]
+            payload["list"].pop()
+            payload["total"] = 2  # consistent but incomplete compare
+
+        api = FakeApi(drop_row)
+        info = dict(
+            INFO,
+            releaseNotes="Добавлено записей: 3;\nИзменено записей: 0;\nУдалено записей: 0;",
+        )
+        handlers = make_handlers()
+        with (
+            patch.object(handlers_module, "fetch_new_version", return_value=info),
+            patch.dict(
+                handlers_module.ANNOTATORS,
+                {OID_1520: build_1520_annotation},
+                clear=True,
+            ),
+            patch.object(
+                handlers_module, "FnsiApi", return_value=MagicMock(get=api.get)
+            ),
+        ):
+            handlers._check_single_dictionary(OID_1520)
+
+        status, annotation_status, reason, payload = job_row(handlers)
+        assert annotation_status == "skipped"
+        assert "differ from compare" in reason
+        assert "Добавлены записи СЭМД (2)" not in payload
+
+    def test_traceback_is_redacted(self, make_handlers, caplog):
+        import logging
+
+        handlers = make_handlers()
+        with caplog.at_level(logging.WARNING):
+            detect(
+                handlers,
+                MagicMock(side_effect=RuntimeError("userKey=SYNTHETIC-SECRET")),
+            )
+
+        rendered = "\n".join(
+            logging.Formatter().format(record) for record in caplog.records
+        )
+        assert "SYNTHETIC" not in rendered
+        assert "userKey=****" in rendered
