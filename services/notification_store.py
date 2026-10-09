@@ -25,6 +25,7 @@ from services.database_service import insert_nsi_passport
 
 logger = logging.getLogger(__name__)
 
+JOB_PREPARING = "preparing"  # annotation is being built, nothing is sent yet
 JOB_READY = "ready"  # message text is final, deliveries in progress
 JOB_DONE = "done"  # every delivery is sent or failed
 
@@ -111,6 +112,19 @@ class NotificationStore:
                 "CREATE INDEX IF NOT EXISTS notification_deliveries_due "
                 "ON notification_deliveries (status, next_attempt_at)"
             )
+            # added with annotations; ALTER for databases created before them
+            existing = {
+                row[1] for row in con.execute("PRAGMA table_info(notification_jobs)")
+            }
+            for column in (
+                "annotation_deadline",
+                "annotation_status",
+                "annotation_reason",
+            ):
+                if column not in existing:
+                    con.execute(
+                        f"ALTER TABLE notification_jobs ADD COLUMN {column} TEXT"
+                    )
 
     # ---------------------------------------------------------------- jobs
 
@@ -120,20 +134,28 @@ class NotificationStore:
         payload: str,
         chat_ids: Iterable[int],
         now: Optional[datetime] = None,
+        annotation_deadline: Optional[datetime] = None,
     ) -> Optional[int]:
         """Store the passport, the job and its deliveries in one transaction.
 
         Args:
             fnsi_info: passport from FNSI (``id`` and ``version`` identify the job)
-            payload: final HTML message text
+            payload: HTML message text; final unless an annotation is prepared
             chat_ids: recipients, fixed at detection time
+            annotation_deadline: if set, the job waits in ``preparing`` until
+                finalize_job() or the deadline; ``payload`` is the fallback text
 
         Returns:
             Job id, or None if this dictionary version is already known.
         """
         now = now or utc_now()
         chats = list(dict.fromkeys(chat_ids))
-        status = JOB_READY if chats else JOB_DONE
+        if not chats:
+            status = JOB_DONE
+        elif annotation_deadline is not None:
+            status = JOB_PREPARING
+        else:
+            status = JOB_READY
         with closing(self._connect()) as con:
             try:
                 with con:
@@ -141,14 +163,15 @@ class NotificationStore:
                         return None
                     job_id = con.execute(
                         "INSERT INTO notification_jobs "
-                        "(dictionary, version, payload, status, created_at) "
-                        "VALUES (?, ?, ?, ?, ?)",
+                        "(dictionary, version, payload, status, created_at, "
+                        "annotation_deadline) VALUES (?, ?, ?, ?, ?, ?)",
                         (
                             fnsi_info["id"],
                             fnsi_info["version"],
                             payload,
                             status,
                             _ts(now),
+                            _ts(annotation_deadline) if annotation_deadline else None,
                         ),
                     ).lastrowid
                     con.executemany(
@@ -167,6 +190,68 @@ class NotificationStore:
                 if self._job_exists(fnsi_info["id"], fnsi_info["version"]):
                     return None
                 raise
+
+    def finalize_job(
+        self,
+        job_id: int,
+        annotation_status: str,
+        payload: Optional[str] = None,
+        reason: Optional[str] = None,
+        now: Optional[datetime] = None,
+    ) -> bool:
+        """Fix the final text of a ``preparing`` job; deliveries may start.
+
+        An annotated ``payload`` is accepted only before the annotation deadline
+        (checked in the same UPDATE); the fallback text (``payload=None``) is
+        accepted at any time while the job is preparing.
+
+        Args:
+            payload: annotated text; None keeps the fallback text stored at creation
+            annotation_status: ``complete``, ``skipped`` or ``failed``
+
+        Returns:
+            False if the job was not preparing (already finalized, e.g. overdue)
+            or an annotated payload came after the deadline.
+        """
+        now = now or utc_now()
+        with closing(self._connect()) as con, con:
+            cursor = con.execute(
+                "UPDATE notification_jobs SET payload = COALESCE(?, payload), "
+                "status = ?, annotation_status = ?, annotation_reason = ? "
+                "WHERE id = ? AND status = ? "
+                "AND (? IS NULL OR annotation_deadline IS NULL OR annotation_deadline > ?)",
+                (
+                    payload,
+                    JOB_READY,
+                    annotation_status,
+                    reason,
+                    job_id,
+                    JOB_PREPARING,
+                    payload,
+                    _ts(now),
+                ),
+            )
+            return cursor.rowcount == 1
+
+    def finalize_overdue(self, now: Optional[datetime] = None) -> int:
+        """Release ``preparing`` jobs whose deadline passed with the fallback text.
+
+        Covers a crash while the annotation was being built: no network is needed.
+        """
+        now = now or utc_now()
+        with closing(self._connect()) as con, con:
+            return con.execute(
+                "UPDATE notification_jobs SET status = ?, annotation_status = ?, "
+                "annotation_reason = ? "
+                "WHERE status = ? AND annotation_deadline <= ?",
+                (
+                    JOB_READY,
+                    "expired",
+                    "deadline passed before the annotation was ready",
+                    JOB_PREPARING,
+                    _ts(now),
+                ),
+            ).rowcount
 
     def _job_exists(self, dictionary: str, version: str) -> bool:
         with closing(self._connect()) as con:
@@ -191,9 +276,9 @@ class NotificationStore:
                 "d.attempts, j.created_at "
                 "FROM notification_deliveries d "
                 "JOIN notification_jobs j ON j.id = d.job_id "
-                "WHERE d.status = ? AND d.next_attempt_at <= ? "
+                "WHERE d.status = ? AND d.next_attempt_at <= ? AND j.status = ? "
                 "ORDER BY j.created_at, j.id, d.id LIMIT ?",
-                (DELIVERY_PENDING, _ts(now), limit),
+                (DELIVERY_PENDING, _ts(now), JOB_READY, limit),
             ).fetchall()
         return [
             Delivery(*row[:7], job_created_at=datetime.fromisoformat(row[7]))
