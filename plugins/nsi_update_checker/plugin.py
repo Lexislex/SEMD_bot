@@ -52,6 +52,24 @@ class Plugin(ScheduledPlugin):
         else:
             return {'interval': 33, 'unit': 'minutes'}
     
+    def get_scheduled_tasks(self) -> List[Dict[str, Any]]:
+        """Проверка обновлений и досылка недоставленных уведомлений."""
+        tasks = super().get_scheduled_tasks()
+        tasks.append(
+            {
+                'func': self.deliver_pending,
+                'interval': 1,
+                'unit': 'minutes',
+                'task_name': 'nsi_deliver_pending',
+            }
+        )
+        return tasks
+
+    def deliver_pending(self):
+        """Отправляет уведомления, время доставки которых наступило
+        (повторы после ошибок Telegram)."""
+        self.handlers.deliver_pending()
+
     def check_updates(self):
         """Проверяет обновления НСИ справочников
         Вызывается по расписанию и уведомляет пользователей об обновлениях
