@@ -1,5 +1,6 @@
 import logging
 import time
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
 
@@ -7,10 +8,17 @@ from telebot import apihelper
 from telebot.types import CallbackQuery
 
 from services.database_service import add_nsi_passport
-from services.fnsi_client import fetch_new_version
-from services.notification_store import NotificationStore
+from services.fnsi_client import (
+    FnsiApi,
+    FnsiApiError,
+    FnsiBudgetExceeded,
+    fetch_new_version,
+    redact,
+)
+from services.notification_store import NotificationStore, utc_now
 from utils.message_manager import get_message_manager
 
+from .annotation_1520 import OID_1520, AnnotationUnavailable, build_1520_annotation
 from .data import NSI_DICTIONARIES, NSI_LIST, notified_count
 from .formatters import (
     DefaultUpdateFormatter,
@@ -18,9 +26,22 @@ from .formatters import (
     MinorUpdateFormatter,
 )
 
+# Справочники с аннотацией «что изменилось»; остальные — обычное уведомление
+ANNOTATORS = {OID_1520: build_1520_annotation}
+# Сколько ждём аннотацию с момента обнаружения версии; потом — обычный текст
+ANNOTATION_DEADLINE = timedelta(minutes=3)
+MAX_ANNOTATION_REQUESTS = 120
+# Лимит Telegram — 4096 символов UTF-16, держим запас
+MESSAGE_LIMIT = 4000
+
 # 400 — сообщение не принято (например, битый HTML), 403 — бот удалён из чата
 # или заблокирован: повтор не поможет
 PERMANENT_TELEGRAM_ERRORS = {400, 403}
+
+
+def tg_length(text: str) -> int:
+    """Length in UTF-16 code units, as Telegram counts it."""
+    return len(text.encode("utf-16-le")) // 2
 
 
 class NSIUpdHandlers:
@@ -85,7 +106,15 @@ class NSIUpdHandlers:
 
             message = self._get_formatter(nsi_oid).format(fnsi_info, nsi_oid)
             chats = self.config.accounts.updates_mailing_list
-            job_id = self.store.create_job(fnsi_info, message, chats)
+            annotator = ANNOTATORS.get(nsi_oid)
+            deadline = utc_now() + ANNOTATION_DEADLINE if annotator and chats else None
+            job_id = self.store.create_job(
+                fnsi_info, message, chats, annotation_deadline=deadline
+            )
+            if job_id is not None and deadline is not None:
+                self._prepare_annotation(
+                    job_id, nsi_oid, fnsi_info, annotator, deadline
+                )
             if job_id is None:
                 self.logger.debug(
                     f"Версия {fnsi_info['version']} справочника {nsi_oid} уже известна"
@@ -103,6 +132,63 @@ class NSIUpdHandlers:
                 f"Ошибка при проверке обновлений для справочника {nsi_oid}: {e}"
             )
 
+    def _prepare_annotation(self, job_id, nsi_oid, fnsi_info, annotator, deadline):
+        """
+        Строит аннотацию в пределах дедлайна и фиксирует итоговый текст задания.
+
+        Любая неудача — обычное уведомление (сохранено при создании задания)
+        и WARNING с причиной; неполную аннотацию не публикуем.
+        """
+        formatter = self._get_formatter(nsi_oid)
+        release = f"{nsi_oid} {fnsi_info['version']}"
+        try:
+            api = FnsiApi(
+                nsi_oid,
+                deadline=time.monotonic() + (deadline - utc_now()).total_seconds(),
+                max_requests=MAX_ANNOTATION_REQUESTS,
+            )
+            frame = formatter.format_annotated(fnsi_info, nsi_oid, "0.00", "")
+            annotation = annotator(
+                api.get,
+                fnsi_info["version"],
+                max_chars=MESSAGE_LIMIT - tg_length(frame),
+                release_notes=fnsi_info.get("releaseNotes"),
+            )
+            text = formatter.format_annotated(
+                fnsi_info, nsi_oid, annotation.predecessor, annotation.html
+            )
+            if tg_length(text) > MESSAGE_LIMIT:
+                raise AnnotationUnavailable(f"message too long: {tg_length(text)}")
+        except AnnotationUnavailable as e:
+            self._finalize_plain(job_id, release, "skipped", str(e))
+        except (FnsiApiError, FnsiBudgetExceeded) as e:
+            self._finalize_plain(job_id, release, "failed", str(e))
+        except Exception as e:
+            # не logger.exception: traceback содержит исходный текст исключения
+            self.logger.error(
+                f"Ошибка аннотации {release}: {redact(traceback.format_exc())}"
+            )
+            self._finalize_plain(job_id, release, "failed", f"{type(e).__name__}: {e}")
+        else:
+            if self.store.finalize_job(job_id, "complete", payload=text):
+                self.logger.info(
+                    f"Аннотация {release} готова ({annotation.predecessor} → "
+                    f"{fnsi_info['version']})"
+                )
+            else:
+                # готова после дедлайна: ожидание ограничено, публикуем без неё
+                self._finalize_plain(
+                    job_id, release, "skipped", "annotation finished after the deadline"
+                )
+
+    def _finalize_plain(self, job_id, release: str, status: str, reason: str):
+        reason = redact(reason)[:500]
+        self.store.finalize_job(job_id, status, reason=reason)
+        self.logger.warning(
+            f"Аннотация {release} недоступна ({status}): {reason}; "
+            f"отправляем обычное уведомление"
+        )
+
     def deliver_pending(self) -> int:
         """
         Отправляет уведомления, время доставки которых наступило.
@@ -115,6 +201,13 @@ class NSIUpdHandlers:
         Returns:
             Количество доставленных сообщений.
         """
+        # задания, аннотация которых не успела (например, процесс упал во время
+        # подготовки), уходят с обычным текстом — без сетевых запросов
+        released = self.store.finalize_overdue()
+        if released:
+            self.logger.warning(
+                f"Аннотация не успела к дедлайну: {released} уведомл. уйдут без неё"
+            )
         sent = 0
         for delivery in self.store.due_deliveries():
             try:
