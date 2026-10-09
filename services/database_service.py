@@ -10,7 +10,6 @@ from datetime import datetime
 from telebot import types
 
 from config import get_config
-from utils.database import create_table_nsi_passport
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +94,48 @@ def get_activity(start_date="", stop_date=""):
             return None
 
 
+NSI_PASSPORT_COLUMNS = (
+    "ID, Name, ShortName, lastUpdate, version, releaseNotes, add_date"
+)
+
+
+def insert_nsi_passport(con: sqlite3.Connection, to_db: dict) -> bool:
+    """
+    Insert an NSI passport using the caller's connection, without committing.
+
+    Lets a caller store the passport and related rows (e.g. a notification job)
+    in one transaction.
+
+    Args:
+        con: open connection to the FNSI database
+        to_db: NSI information (keys: id, fullName, shortName, lastUpdate,
+            version, releaseNotes)
+
+    Returns:
+        bool: True if the passport was inserted, False if this version is already known
+    """
+    con.execute(f"CREATE TABLE IF NOT EXISTS nsi_passport ({NSI_PASSPORT_COLUMNS})")
+    row = con.execute(
+        "SELECT 1 FROM nsi_passport WHERE (ID = ? AND version = ?)",
+        [to_db["id"], to_db["version"]],
+    ).fetchone()
+    if row is not None:
+        return False
+    con.execute(
+        f"INSERT INTO nsi_passport ({NSI_PASSPORT_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+            to_db["id"],
+            to_db["fullName"],
+            to_db["shortName"],
+            to_db["lastUpdate"],
+            to_db["version"],
+            to_db["releaseNotes"],
+            datetime.now().isoformat(),
+        ],
+    )
+    return True
+
+
 def add_nsi_passport(to_db: dict) -> bool:
     """
     Add NSI (Reference Information System) passport to database.
@@ -109,37 +150,9 @@ def add_nsi_passport(to_db: dict) -> bool:
         bool: True if changes were made, False otherwise
     """
     with closing(sqlite3.connect(cfg.paths.fnsi_db_path)) as con:
-        table_exists = con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='nsi_passport'"
-        ).fetchone()
-        if not table_exists:
-            create_table_nsi_passport()
-
-        row = con.execute(
-            "SELECT 1 FROM nsi_passport WHERE (ID = ? AND version = ?)",
-            [to_db["id"], to_db["version"]],
-        ).fetchone()
-        if row is not None:
-            return False
-
         try:
             with con:
-                con.execute(
-                    "INSERT INTO nsi_passport"
-                    "(ID, Name, ShortName, lastUpdate, "
-                    "version, releaseNotes, add_date) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?);",
-                    [
-                        to_db["id"],
-                        to_db["fullName"],
-                        to_db["shortName"],
-                        to_db["lastUpdate"],
-                        to_db["version"],
-                        to_db["releaseNotes"],
-                        datetime.now().isoformat(),
-                    ],
-                )
-            return True
+                return insert_nsi_passport(con, to_db)
         except Exception as e:
             logger.warning(f"Warning: {e}")
             return False
