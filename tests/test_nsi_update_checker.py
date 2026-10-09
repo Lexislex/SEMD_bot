@@ -157,3 +157,134 @@ class TestNotificationFlow:
 
         later = handlers.store.due_deliveries(now=utc_now() + timedelta(hours=1))
         assert len(later) == expected_due * 2
+
+
+class TestNotificationRecovery:
+    """Restart and partial-failure scenarios on fresh objects (no network)."""
+
+    @pytest.fixture
+    def make(self, tmp_path):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+
+        from plugins.nsi_update_checker.handlers import NSIUpdHandlers
+        from services.notification_store import NotificationStore
+
+        config = SimpleNamespace(
+            accounts=SimpleNamespace(updates_mailing_list=[10, 20]),
+            paths=SimpleNamespace(fnsi_db_path=tmp_path / "fnsi.sqlite"),
+        )
+
+        def factory():
+            bot = MagicMock()
+            bot.send_message.return_value = SimpleNamespace(message_id=1)
+            return NSIUpdHandlers(
+                bot, config, store=NotificationStore(config.paths.fnsi_db_path)
+            )
+
+        return factory
+
+    def test_restart_sends_only_undelivered_chat(self, make):
+        from datetime import timedelta
+        from unittest.mock import patch
+
+        from services.notification_store import RETRY_DELAYS, utc_now
+
+        first = make()
+        with patch(
+            "plugins.nsi_update_checker.handlers.fetch_new_version",
+            return_value=TestNotificationFlow.INFO,
+        ):
+            first._check_single_dictionary(TestNotificationFlow.OID)
+        first.bot.send_message.side_effect = [
+            first.bot.send_message.return_value,
+            ConnectionError("down"),
+        ]
+        assert first.deliver_pending() == 1
+
+        restarted = make()  # новый процесс: новые объекты, та же БД
+        later = utc_now() + RETRY_DELAYS[0] + timedelta(seconds=5)
+        with patch("services.notification_store.utc_now", return_value=later):
+            assert restarted.deliver_pending() == 1
+        assert [c.args[0] for c in restarted.bot.send_message.call_args_list] == [20]
+
+    def test_store_failure_after_send_keeps_others_and_allows_duplicate(self, make):
+        from unittest.mock import patch
+
+        handlers = make()
+        with patch(
+            "plugins.nsi_update_checker.handlers.fetch_new_version",
+            return_value=TestNotificationFlow.INFO,
+        ):
+            handlers._check_single_dictionary(TestNotificationFlow.OID)
+        original = handlers.store.mark_sent
+        calls = []
+
+        def flaky(delivery, message_id, now=None):
+            calls.append(delivery.chat_id)
+            if delivery.chat_id == 10:
+                raise RuntimeError("db locked")
+            original(delivery, message_id, now)
+
+        with patch.object(handlers.store, "mark_sent", side_effect=flaky):
+            assert (
+                handlers.deliver_pending() == 1
+            )  # чат 20 доставлен несмотря на сбой 10
+        assert calls == [10, 20]
+
+        # чат 10 остался pending: после рестарта уйдёт повторно (допустимый дубль)
+        restarted = make()
+        assert restarted.deliver_pending() == 1
+        assert [c.args[0] for c in restarted.bot.send_message.call_args_list] == [10]
+
+    def test_migration_400_retargets_and_resends(self, make):
+        from unittest.mock import patch
+
+        from telebot.apihelper import ApiTelegramException
+
+        handlers = make()
+        handlers.config.accounts.updates_mailing_list = [10]
+        with patch(
+            "plugins.nsi_update_checker.handlers.fetch_new_version",
+            return_value=TestNotificationFlow.INFO,
+        ):
+            handlers._check_single_dictionary(TestNotificationFlow.OID)
+        migrated = ApiTelegramException(
+            "sendMessage",
+            None,
+            {
+                "error_code": 400,
+                "description": "group chat was upgraded to a supergroup chat",
+                "parameters": {"migrate_to_chat_id": -100123},
+            },
+        )
+        handlers.bot.send_message.side_effect = [
+            migrated,
+            handlers.bot.send_message.return_value,
+        ]
+
+        assert handlers.deliver_pending() == 0
+        assert handlers.deliver_pending() == 1
+        assert handlers.bot.send_message.call_args.args[0] == -100123
+
+    def test_expired_pending_is_not_sent_after_long_downtime(self, make):
+        from datetime import timedelta
+        from unittest.mock import patch
+
+        from services.notification_store import utc_now
+
+        handlers = make()
+        with patch(
+            "plugins.nsi_update_checker.handlers.fetch_new_version",
+            return_value=TestNotificationFlow.INFO,
+        ):
+            handlers._check_single_dictionary(TestNotificationFlow.OID)
+
+        restarted = make()
+        with patch(
+            "services.notification_store.utc_now",
+            return_value=utc_now() + timedelta(days=2),
+        ):
+            assert restarted.deliver_pending() == 0
+        restarted.bot.send_message.assert_not_called()
+        assert restarted.store.due_deliveries(now=utc_now() + timedelta(days=3)) == []

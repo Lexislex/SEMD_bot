@@ -41,8 +41,9 @@ RETRY_DELAYS = (
     timedelta(hours=3),
     timedelta(hours=6),
 )
-# A notification older than this is not worth sending anymore
+# A notification older than this is not worth sending anymore (product decision)
 MAX_DELIVERY_AGE = timedelta(hours=24)
+LAST_ATTEMPT_MARGIN = timedelta(minutes=2)
 
 
 def utc_now() -> datetime:
@@ -161,8 +162,21 @@ class NotificationStore:
                     )
                     return job_id
             except sqlite3.IntegrityError:
-                # another writer stored this version first
-                return None
+                # dedup only when another writer really stored this version first;
+                # any other constraint violation is a bug that must stay visible
+                if self._job_exists(fnsi_info["id"], fnsi_info["version"]):
+                    return None
+                raise
+
+    def _job_exists(self, dictionary: str, version: str) -> bool:
+        with closing(self._connect()) as con:
+            return (
+                con.execute(
+                    "SELECT 1 FROM notification_jobs WHERE dictionary = ? AND version = ?",
+                    (dictionary, version),
+                ).fetchone()
+                is not None
+            )
 
     # ---------------------------------------------------------- deliveries
 
@@ -200,6 +214,21 @@ class NotificationStore:
         """Give up on a delivery that cannot succeed (e.g. the bot was removed)."""
         self._finish(delivery, DELIVERY_FAILED, None, error, now)
 
+    @staticmethod
+    def is_expired(delivery: Delivery, now: Optional[datetime] = None) -> bool:
+        """A notification older than MAX_DELIVERY_AGE is not sent anymore."""
+        return (now or utc_now()) - delivery.job_created_at >= MAX_DELIVERY_AGE
+
+    def mark_expired(self, delivery: Delivery, now: Optional[datetime] = None) -> None:
+        self._finish(
+            delivery,
+            DELIVERY_FAILED,
+            None,
+            f"expired: not delivered within {MAX_DELIVERY_AGE}",
+            now,
+            delivery.attempts,
+        )
+
     def mark_retry(
         self,
         delivery: Delivery,
@@ -213,15 +242,17 @@ class NotificationStore:
             retry_after: delay requested by Telegram (429), overrides the schedule
 
         Returns:
-            False if the notification got too old and the delivery was given up.
+            False if the notification is already expired and the delivery was given up.
         """
         now = now or utc_now()
         attempts = delivery.attempts + 1
-        delay = retry_after or RETRY_DELAYS[min(attempts, len(RETRY_DELAYS)) - 1]
-        next_attempt = now + delay
-        if next_attempt - delivery.job_created_at > MAX_DELIVERY_AGE:
+        if self.is_expired(delivery, now):
             self._finish(delivery, DELIVERY_FAILED, None, error, now, attempts)
             return False
+        delay = retry_after or RETRY_DELAYS[min(attempts, len(RETRY_DELAYS)) - 1]
+        # the last attempt happens just before expiry (the scheduler ticks every minute)
+        last_chance = delivery.job_created_at + MAX_DELIVERY_AGE - LAST_ATTEMPT_MARGIN
+        next_attempt = max(now, min(now + delay, last_chance))
         with closing(self._connect()) as con, con:
             con.execute(
                 "UPDATE notification_deliveries "
@@ -237,6 +268,46 @@ class NotificationStore:
                 ),
             )
         return True
+
+    def migrate_chat(
+        self, delivery: Delivery, new_chat_id: int, now: Optional[datetime] = None
+    ) -> bool:
+        """Re-address a delivery after Telegram moved a group to a supergroup.
+
+        Returns:
+            True if the delivery now targets ``new_chat_id`` and is due at once;
+            False if the job already has a delivery to that chat (this row is
+            closed as a duplicate).
+        """
+        now = now or utc_now()
+        with closing(self._connect()) as con:
+            try:
+                with con:
+                    con.execute(
+                        "UPDATE notification_deliveries "
+                        "SET chat_id = ?, next_attempt_at = ?, last_error = ?, updated_at = ? "
+                        "WHERE id = ? AND status = ?",
+                        (
+                            new_chat_id,
+                            _ts(now),
+                            f"migrated from chat {delivery.chat_id}",
+                            _ts(now),
+                            delivery.id,
+                            DELIVERY_PENDING,
+                        ),
+                    )
+                return True
+            except sqlite3.IntegrityError:
+                pass
+        self._finish(
+            delivery,
+            DELIVERY_FAILED,
+            None,
+            f"migrated to chat {new_chat_id}, which already receives this job",
+            now,
+            delivery.attempts,
+        )
+        return False
 
     def _finish(
         self,

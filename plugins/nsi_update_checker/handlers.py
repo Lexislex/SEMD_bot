@@ -117,37 +117,68 @@ class NSIUpdHandlers:
         """
         sent = 0
         for delivery in self.store.due_deliveries():
-            silent = self._get_formatter(delivery.dictionary).should_send_silent(
-                delivery.dictionary
-            )
             try:
-                message = self.bot.send_message(
-                    delivery.chat_id,
-                    delivery.payload,
-                    parse_mode="html",
-                    disable_web_page_preview=True,
-                    disable_notification=silent,
-                )
-            except apihelper.ApiTelegramException as e:
-                self._handle_telegram_error(delivery, e)
-                continue
+                sent += self._deliver(delivery)
             except Exception as e:
-                # сеть, таймаут и прочее — временная ошибка
-                self._retry(delivery, f"{type(e).__name__}: {e}")
-                continue
-
-            self.store.mark_sent(delivery, getattr(message, "message_id", None))
-            sent += 1
-            self.logger.debug(
-                f"Уведомление об обновлении {delivery.dictionary} {delivery.version} "
-                f"отправлено в чат {delivery.chat_id}"
-            )
+                # сбой одной доставки (например, записи в БД после отправки) не
+                # останавливает остальные; строка остаётся pending, возможен дубль
+                self.logger.exception(
+                    f"Ошибка доставки уведомления {delivery.dictionary} "
+                    f"{delivery.version} в чат {delivery.chat_id}: {e}"
+                )
         return sent
+
+    def _deliver(self, delivery) -> int:
+        if self.store.is_expired(delivery):
+            self.store.mark_expired(delivery)
+            self.logger.error(
+                f"Уведомление об обновлении {delivery.dictionary} {delivery.version} "
+                f"устарело и не доставлено в чат {delivery.chat_id}"
+            )
+            return 0
+
+        silent = self._get_formatter(delivery.dictionary).should_send_silent(
+            delivery.dictionary
+        )
+        try:
+            message = self.bot.send_message(
+                delivery.chat_id,
+                delivery.payload,
+                parse_mode="html",
+                disable_web_page_preview=True,
+                disable_notification=silent,
+            )
+        except apihelper.ApiTelegramException as e:
+            self._handle_telegram_error(delivery, e)
+            return 0
+        except Exception as e:
+            # сеть, таймаут и прочее — временная ошибка
+            self._retry(delivery, f"{type(e).__name__}: {e}")
+            return 0
+
+        self.store.mark_sent(delivery, getattr(message, "message_id", None))
+        self.logger.debug(
+            f"Уведомление об обновлении {delivery.dictionary} {delivery.version} "
+            f"отправлено в чат {delivery.chat_id}"
+        )
+        return 1
 
     def _handle_telegram_error(self, delivery, error: apihelper.ApiTelegramException):
         code = error.error_code
-        if code == 429:
-            parameters = (error.result_json or {}).get("parameters") or {}
+        parameters = (error.result_json or {}).get("parameters") or {}
+        if parameters.get("migrate_to_chat_id"):
+            # группа стала супергруппой: тот же получатель, новый адрес
+            new_chat = parameters["migrate_to_chat_id"]
+            self.logger.warning(
+                f"Чат {delivery.chat_id} перенесён в {new_chat}: "
+                f"обновите UPDS_MAILING_LIST"
+            )
+            if not self.store.migrate_chat(delivery, new_chat):
+                self.logger.warning(
+                    f"Чат {new_chat} уже получает уведомление {delivery.dictionary} "
+                    f"{delivery.version}, дубль не отправляем"
+                )
+        elif code == 429:
             retry_after = parameters.get("retry_after")
             self._retry(
                 delivery,

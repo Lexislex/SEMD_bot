@@ -1,4 +1,5 @@
 import sqlite3
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import pytest
 
@@ -8,6 +9,7 @@ from services.notification_store import (
     DELIVERY_SENT,
     JOB_DONE,
     JOB_READY,
+    LAST_ATTEMPT_MARGIN,
     MAX_DELIVERY_AGE,
     RETRY_DELAYS,
     NotificationStore,
@@ -65,14 +67,44 @@ class TestCreateJob:
         assert len(rows(db, "SELECT * FROM notification_jobs")) == 1
         assert len(rows(db, "SELECT * FROM nsi_passport")) == 1
 
-    def test_failure_rolls_back_passport(self, store, db):
+    @pytest.mark.parametrize(
+        "trigger_sql, error",
+        [
+            # нарушение данных — не «версия уже известна», ошибка должна быть видна
+            (None, sqlite3.IntegrityError),
+            ("SELECT RAISE(FAIL, 'disk I/O')", sqlite3.DatabaseError),
+        ],
+    )
+    def test_failure_rolls_back_passport(self, store, db, trigger_sql, error):
         # если задание не записалось, паспорт тоже не должен остаться —
         # иначе следующий цикл не увидит обновление
-        # chat_id NULL нарушает NOT NULL на последней вставке транзакции
-        assert store.create_job(INFO, "text", [10, None], now=NOW) is None
+        chats = [10]
+        if trigger_sql:
+            with sqlite3.connect(db) as con:
+                con.execute(
+                    "CREATE TRIGGER boom BEFORE INSERT ON notification_deliveries "
+                    f"BEGIN {trigger_sql}; END"
+                )
+        else:
+            chats = [10, None]  # NOT NULL на последней вставке транзакции
+
+        with pytest.raises(error):
+            store.create_job(INFO, "text", chats, now=NOW)
 
         assert rows(db, "SELECT * FROM nsi_passport") == []
         assert rows(db, "SELECT * FROM notification_jobs") == []
+
+    def test_losing_writer_rolls_back_its_passport(self, store, db):
+        # гонка: другой writer уже создал задание, а паспорт этот writer ещё не видит
+        other = NotificationStore(db)
+        other.create_job(INFO, "text", [10], now=NOW)
+        with sqlite3.connect(db) as con:
+            con.execute("DELETE FROM nsi_passport")
+
+        assert store.create_job(INFO, "text", [10], now=NOW) is None
+
+        assert rows(db, "SELECT * FROM nsi_passport") == []
+        assert len(rows(db, "SELECT * FROM notification_jobs")) == 1
 
     def test_empty_mailing_list_job_is_done(self, store, db):
         store.create_job(INFO, "text", [], now=NOW)
@@ -149,10 +181,25 @@ class TestDeliveries:
 
         assert len(store.due_deliveries(now=NOW + timedelta(seconds=7))) == 1
 
+    def test_late_error_with_long_backoff_keeps_trying_until_expiry(self, store):
+        # 5 неудач уже дают паузу 6 ч; ошибка в возрасте 19 ч не должна
+        # закрывать доставку раньше 24 ч
+        store.create_job(INFO, "text", [10], now=NOW)
+        (delivery,) = store.due_deliveries(now=NOW)
+        delivery = replace(delivery, attempts=5)
+        late = NOW + timedelta(hours=19)
+
+        assert store.mark_retry(delivery, "502", now=late)
+
+        last_chance = NOW + MAX_DELIVERY_AGE - LAST_ATTEMPT_MARGIN
+        assert store.due_deliveries(now=last_chance - timedelta(seconds=1)) == []
+        (due,) = store.due_deliveries(now=last_chance)
+        assert not store.is_expired(due, now=last_chance)
+
     def test_gives_up_after_max_age(self, store, db):
         store.create_job(INFO, "text", [10], now=NOW)
         (delivery,) = store.due_deliveries(now=NOW)
-        late = NOW + MAX_DELIVERY_AGE - timedelta(seconds=30)  # +1 мин уже за пределом
+        late = NOW + MAX_DELIVERY_AGE
 
         assert not store.mark_retry(delivery, "still down", now=late)
 
@@ -171,3 +218,36 @@ class TestDeliveries:
             (DELIVERY_FAILED, 1)
         ]
         assert store.due_deliveries(now=NOW + timedelta(days=2)) == []
+
+
+class TestExpiryAndMigration:
+    def test_pending_after_restart_expires_before_send(self, db):
+        # бот лежал больше суток: старое уведомление не отправляется
+        NotificationStore(db).create_job(INFO, "text", [10], now=NOW)
+        restarted = NotificationStore(db)
+        (delivery,) = restarted.due_deliveries(now=NOW + timedelta(days=2))
+
+        assert restarted.is_expired(delivery, now=NOW + timedelta(days=2))
+        restarted.mark_expired(delivery, now=NOW + timedelta(days=2))
+
+        assert rows(db, "SELECT status FROM notification_deliveries") == [
+            (DELIVERY_FAILED,)
+        ]
+        assert rows(db, "SELECT status FROM notification_jobs") == [(JOB_DONE,)]
+
+    def test_migrate_chat_retargets_and_is_due(self, store, db):
+        store.create_job(INFO, "text", [10], now=NOW)
+        (delivery,) = store.due_deliveries(now=NOW)
+
+        assert store.migrate_chat(delivery, -100123, now=NOW)
+
+        (due,) = store.due_deliveries(now=NOW)
+        assert due.chat_id == -100123
+
+    def test_migrate_chat_to_existing_recipient_closes_duplicate(self, store, db):
+        store.create_job(INFO, "text", [10, -100123], now=NOW)
+        old, _ = store.due_deliveries(now=NOW)
+
+        assert not store.migrate_chat(old, -100123, now=NOW)
+
+        assert [d.chat_id for d in store.due_deliveries(now=NOW)] == [-100123]
