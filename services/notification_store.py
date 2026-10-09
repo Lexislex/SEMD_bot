@@ -197,22 +197,39 @@ class NotificationStore:
         annotation_status: str,
         payload: Optional[str] = None,
         reason: Optional[str] = None,
+        now: Optional[datetime] = None,
     ) -> bool:
         """Fix the final text of a ``preparing`` job; deliveries may start.
+
+        An annotated ``payload`` is accepted only before the annotation deadline
+        (checked in the same UPDATE); the fallback text (``payload=None``) is
+        accepted at any time while the job is preparing.
 
         Args:
             payload: annotated text; None keeps the fallback text stored at creation
             annotation_status: ``complete``, ``skipped`` or ``failed``
 
         Returns:
-            False if the job was not preparing (already finalized, e.g. overdue).
+            False if the job was not preparing (already finalized, e.g. overdue)
+            or an annotated payload came after the deadline.
         """
+        now = now or utc_now()
         with closing(self._connect()) as con, con:
             cursor = con.execute(
                 "UPDATE notification_jobs SET payload = COALESCE(?, payload), "
                 "status = ?, annotation_status = ?, annotation_reason = ? "
-                "WHERE id = ? AND status = ?",
-                (payload, JOB_READY, annotation_status, reason, job_id, JOB_PREPARING),
+                "WHERE id = ? AND status = ? "
+                "AND (? IS NULL OR annotation_deadline IS NULL OR annotation_deadline > ?)",
+                (
+                    payload,
+                    JOB_READY,
+                    annotation_status,
+                    reason,
+                    job_id,
+                    JOB_PREPARING,
+                    payload,
+                    _ts(now),
+                ),
             )
             return cursor.rowcount == 1
 

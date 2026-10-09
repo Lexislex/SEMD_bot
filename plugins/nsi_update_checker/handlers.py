@@ -12,6 +12,7 @@ from services.fnsi_client import (
     FnsiApiError,
     FnsiBudgetExceeded,
     fetch_new_version,
+    redact,
 )
 from services.notification_store import NotificationStore, utc_now
 from utils.message_manager import get_message_manager
@@ -161,7 +162,7 @@ class NSIUpdHandlers:
         except (FnsiApiError, FnsiBudgetExceeded) as e:
             self._finalize_plain(job_id, release, "failed", str(e))
         except Exception as e:
-            self.logger.exception(f"Ошибка аннотации {release}: {e}")
+            self.logger.exception(f"Ошибка аннотации {release}: {redact(str(e))}")
             self._finalize_plain(job_id, release, "failed", f"{type(e).__name__}: {e}")
         else:
             if self.store.finalize_job(job_id, "complete", payload=text):
@@ -169,9 +170,15 @@ class NSIUpdHandlers:
                     f"Аннотация {release} готова ({annotation.predecessor} → "
                     f"{fnsi_info['version']})"
                 )
+            else:
+                # готова после дедлайна: ожидание ограничено, публикуем без неё
+                self._finalize_plain(
+                    job_id, release, "skipped", "annotation finished after the deadline"
+                )
 
     def _finalize_plain(self, job_id, release: str, status: str, reason: str):
-        self.store.finalize_job(job_id, status, reason=reason[:500])
+        reason = redact(reason)[:500]
+        self.store.finalize_job(job_id, status, reason=reason)
         self.logger.warning(
             f"Аннотация {release} недоступна ({status}): {reason}; "
             f"отправляем обычное уведомление"

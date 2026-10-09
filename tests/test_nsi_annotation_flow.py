@@ -1,5 +1,6 @@
 """Budgeted FNSI transport and the annotation step of notification jobs."""
 
+import json
 import time
 from datetime import timedelta
 from types import SimpleNamespace
@@ -31,11 +32,13 @@ INFO = {
 # ------------------------------------------------------------------ transport
 
 
-def response(status=200, payload=None):
+def response(status=200, payload=None, chunks=None):
+    """Streamed response: the body is read through iter_content."""
     resp = MagicMock(status_code=status)
-    resp.json.return_value = (
+    body = json.dumps(
         payload if payload is not None else {"result": "OK", "list": []}
-    )
+    ).encode()
+    resp.iter_content.return_value = chunks if chunks is not None else [body]
     return resp
 
 
@@ -94,6 +97,43 @@ class TestFnsiApi:
             api.get("data")
         assert "SECRET" not in str(err.value)
         assert "ConnectionError" in str(err.value)
+
+    def test_trickling_body_is_cut_by_deadline(self):
+        # timeout ограничивает паузу между байтами, а не всю загрузку:
+        # тело приходит кусками, а время уже вышло
+        now = [0.0]
+
+        def body():
+            yield b'{"result"'
+            now[0] = 50.0  # между кусками прошло больше бюджета
+            yield b': "OK"}'
+
+        resp = response()
+        resp.iter_content.return_value = body()
+        with patch("services.fnsi_client.monotonic", side_effect=lambda: now[0]):
+            api, _ = self.make([resp], deadline=0)
+            api.deadline = 10.0
+            with pytest.raises(FnsiBudgetExceeded, match="while reading"):
+                api.get("compare")
+        resp.close.assert_called_once()
+
+    def test_server_text_is_not_in_error(self):
+        api, _ = self.make(
+            [
+                response(
+                    payload={
+                        "result": "ERROR",
+                        "resultCode": 7,
+                        "resultText": "denied for userKey=SYNTHETIC-SECRET",
+                    }
+                )
+            ]
+        )
+
+        with pytest.raises(FnsiApiError) as err:
+            api.get("compare")
+        assert "SYNTHETIC" not in str(err.value)
+        assert "code 7" in str(err.value)
 
     @pytest.mark.parametrize(
         "resp",
@@ -239,3 +279,48 @@ class TestAnnotationStep:
 
         annotator.assert_not_called()
         assert job_row(handlers)[:2] == ("ready", None)
+
+
+class TestDeadlineAndRedaction:
+    def test_annotation_after_deadline_is_not_accepted(self, make_handlers):
+        handlers = make_handlers()
+        job_id = handlers.store.create_job(
+            INFO, "plain", [10], annotation_deadline=utc_now() - timedelta(seconds=1)
+        )
+
+        # finalize_overdue ещё не запускался: проверка дедлайна в самом UPDATE
+        assert not handlers.store.finalize_job(job_id, "complete", payload="annotated")
+        assert handlers.store.finalize_job(job_id, "skipped", reason="late")
+        assert job_row(handlers)[3] == "plain"
+
+    def test_late_annotation_falls_back_in_handler(self, make_handlers):
+        handlers = make_handlers()
+
+        def slow(*args, **kwargs):
+            # аннотация готова, но дедлайн уже прошёл
+            later = utc_now() + timedelta(minutes=5)
+            patcher = patch("services.notification_store.utc_now", return_value=later)
+            patcher.start()
+            slow.patcher = patcher
+            return Annotation("12.95", "➕ <b>x</b>")
+
+        try:
+            detect(handlers, slow)
+        finally:
+            slow.patcher.stop()
+
+        status, annotation_status, reason, payload = job_row(handlers)
+        assert (status, annotation_status) == ("ready", "skipped")
+        assert "after the deadline" in reason
+        assert "Описание изменений" in payload
+
+    def test_reason_is_redacted(self, make_handlers):
+        handlers = make_handlers()
+
+        detect(
+            handlers,
+            MagicMock(side_effect=RuntimeError("boom userKey=SYNTHETIC-SECRET&x=1")),
+        )
+
+        assert "SYNTHETIC" not in job_row(handlers)[2]
+        assert "userKey=****" in job_row(handlers)[2]

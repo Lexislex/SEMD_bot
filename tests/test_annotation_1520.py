@@ -211,3 +211,144 @@ class TestRendering:
     )
     def test_oid_list(self, oids, expected):
         assert _oid_list(oids) == expected
+
+
+class TestCompletenessChecks:
+    """Codex review of #25: refusals that must not let a partial diff through."""
+
+    def test_non_empty_compare_without_total(self):
+        def patch(data):
+            payload = data[compare_key(data, "2026-08-10")]["data"]
+            payload["list"].pop()
+            payload["total"] = None
+
+        with pytest.raises(AnnotationUnavailable, match="no numeric total"):
+            build("12.96", FakeApi(patch))
+
+    def test_total_changes_between_pages(self):
+        from plugins.nsi_update_checker import annotation_1520 as module
+
+        api = FakeApi()
+        key = compare_key(api.data, "2026-08-10")
+        rows = api.data[key]["data"]["list"]
+        pages = {1: {"total": 3, "list": rows[:2]}, 2: {"total": 4, "list": rows[2:]}}
+        original = api.get
+
+        def get(endpoint, **params):
+            if endpoint == "compare":
+                return {"result": "OK", "data": pages[params["page"]]}
+            return original(endpoint, **params)
+
+        with patch_page_size(module, 2):
+            with pytest.raises(AnnotationUnavailable, match="total changed"):
+                build_1520_annotation(get, "12.96", 3500)
+
+    def test_multi_page_compare_is_collected(self):
+        from plugins.nsi_update_checker import annotation_1520 as module
+
+        api = FakeApi()
+        key = compare_key(api.data, "2026-08-10")
+        rows = api.data[key]["data"]["list"]
+        pages = {1: {"total": 3, "list": rows[:2]}, 2: {"total": 3, "list": rows[2:]}}
+        original = api.get
+
+        def get(endpoint, **params):
+            if endpoint == "compare":
+                return {"result": "OK", "data": pages[params["page"]]}
+            return original(endpoint, **params)
+
+        with patch_page_size(module, 2):
+            html = build_1520_annotation(get, "12.96", 3500).html
+        assert "Добавлены записи СЭМД (3)" in html
+
+    @pytest.mark.parametrize(
+        "edit, match",
+        [
+            (
+                lambda resp: resp["list"][0].__setitem__(
+                    [i for i, c in enumerate(resp["list"][0]) if c["column"] == "OID"][
+                        0
+                    ],
+                    {"column": "OID", "value": "999"},
+                ),
+                "got a row of OID",
+            ),
+            (lambda resp: resp.__setitem__("total", 2), "1 rows"),
+            (
+                lambda resp: resp["list"][0].append({"column": "NAME", "value": "x"}),
+                "duplicate columns",
+            ),
+        ],
+    )
+    def test_old_row_must_be_the_requested_record(self, edit, match):
+        def patch(data):
+            edit(data["data?filters=OID|340|EQ&page=1&size=2&version=12.94"])
+
+        with pytest.raises(AnnotationUnavailable, match=match):
+            build("12.95", FakeApi(patch))
+
+    def test_newer_release_in_same_minute(self):
+        def patch(data):
+            versions = data["versions?page=1&size=50"]["list"]
+            versions.insert(0, dict(versions[0], version="12.97"))
+
+        with pytest.raises(AnnotationUnavailable, match="12.96→12.97"):
+            build("12.96", FakeApi(patch))
+
+    @pytest.mark.parametrize(
+        "version, notes",
+        [
+            (
+                "12.96",
+                "Добавлено записей: 3;\nИзменено записей: 0;\nУдалено записей: 0;\nДобавлено полей: 0;\nИзменено полей: 0;\nУдалено полей: 0;",
+            ),
+            (
+                "12.95",
+                "Добавлено записей: 0;\nИзменено записей: 5;\nУдалено записей: 0;",
+            ),
+            (
+                "12.94",
+                "Добавлено записей: 1;\nИзменено записей: 5;\nУдалено записей: 0;",
+            ),
+        ],
+    )
+    def test_matching_release_counters(self, version, notes):
+        build_1520_annotation(FakeApi().get, version, 3500, release_notes=notes)
+
+    @pytest.mark.parametrize(
+        "notes, match",
+        [
+            (
+                "Добавлено записей: 4;\nИзменено записей: 0;\nУдалено записей: 0;",
+                "differ from compare",
+            ),
+            (
+                "Добавлено записей: 3;\nИзменено записей: 0;\nУдалено записей: 1;",
+                "differ from compare",
+            ),
+            (
+                "Добавлено записей: 3;\nИзменено записей: 0;\nУдалено записей: 0;\nДобавлено полей: 1;",
+                "schema changed",
+            ),
+        ],
+    )
+    def test_release_counters_mismatch(self, notes, match):
+        with pytest.raises(AnnotationUnavailable, match=match):
+            build_1520_annotation(FakeApi().get, "12.96", 3500, release_notes=notes)
+
+    def test_unparsable_counters_skip_the_check(self):
+        build_1520_annotation(
+            FakeApi().get, "12.96", 3500, release_notes="<p>описание</p>"
+        )
+
+
+class patch_page_size:
+    def __init__(self, module, size):
+        self.module, self.size = module, size
+
+    def __enter__(self):
+        self.old = self.module.COMPARE_PAGE_SIZE
+        self.module.COMPARE_PAGE_SIZE = self.size
+
+    def __exit__(self, *exc):
+        self.module.COMPARE_PAGE_SIZE = self.old

@@ -1,5 +1,7 @@
 # Настройка логирования
+import json
 import logging
+import re
 from datetime import datetime
 from time import monotonic, sleep
 from typing import Optional
@@ -240,6 +242,16 @@ def fetch_new_version(fnsi_oid: str) -> Optional[dict]:
         return None
 
 
+_USER_KEY_RE = re.compile(r"(userKey=)[^&\s'\"]+", re.IGNORECASE)
+
+
+def redact(text: str) -> str:
+    """Mask the FNSI API key in a free-text message before logging or storing it."""
+    text = _USER_KEY_RE.sub(r"\1****", text)
+    key = get_config().apis.fnsi_api_key
+    return text.replace(key, "****") if key else text
+
+
 class FnsiBudgetExceeded(Exception):
     """The overall time or request budget of a task is exhausted."""
 
@@ -257,6 +269,7 @@ class FnsiApi:
     """
 
     RETRY_STATUSES = {429, 500, 502, 503, 504}
+    MAX_BODY_BYTES = 20 * 1024 * 1024
 
     def __init__(
         self,
@@ -311,32 +324,61 @@ class FnsiApi:
                     verify=str(self._cfg.paths.mzrf_cert_path),
                     proxies=build_proxies(url),
                     timeout=min(self._cfg.apis.fnsi_request_timeout, left),
+                    stream=True,
                 )
+                try:
+                    if response.status_code in self.RETRY_STATUSES:
+                        last_error = f"HTTP {response.status_code}"
+                    elif response.status_code != 200:
+                        raise FnsiApiError(f"{endpoint}: HTTP {response.status_code}")
+                    else:
+                        return self._envelope(
+                            endpoint, self._read_body(endpoint, response)
+                        )
+                finally:
+                    response.close()
             except requests.RequestException as e:
                 # str(e) may contain the full URL with userKey
                 last_error = type(e).__name__
-            else:
-                if response.status_code in self.RETRY_STATUSES:
-                    last_error = f"HTTP {response.status_code}"
-                elif response.status_code != 200:
-                    raise FnsiApiError(f"{endpoint}: HTTP {response.status_code}")
-                else:
-                    return self._envelope(endpoint, response)
             delay = backoff_delay(attempt, _DEFAULT_FNSI_RETRY_DELAY)
             if attempt == self.max_retries or delay >= self.remaining() - 1:
                 break
             sleep(delay)
         raise FnsiApiError(f"{endpoint}: {last_error}")
 
+    def _read_body(self, endpoint: str, response: requests.Response) -> bytes:
+        """Read the body within the budget.
+
+        The requests timeout limits a pause between bytes, not the whole
+        download, so a slowly trickling response is cut by the deadline here.
+        """
+        chunks, size = [], 0
+        for chunk in response.iter_content(chunk_size=65536):
+            size += len(chunk)
+            if size > self.MAX_BODY_BYTES:
+                raise FnsiApiError(
+                    f"{endpoint}: response larger than {self.MAX_BODY_BYTES} bytes"
+                )
+            chunks.append(chunk)
+            if self.remaining() <= 0:
+                raise FnsiBudgetExceeded(
+                    f"{endpoint}: time budget exhausted while reading"
+                )
+        if self.remaining() <= 0:
+            raise FnsiBudgetExceeded(f"{endpoint}: time budget exhausted while reading")
+        return b"".join(chunks)
+
     @staticmethod
-    def _envelope(endpoint: str, response: requests.Response) -> dict:
+    def _envelope(endpoint: str, body: bytes) -> dict:
         try:
-            data = response.json()
+            data = json.loads(body)
         except ValueError as e:
             raise FnsiApiError(f"{endpoint}: invalid JSON") from e
         if not isinstance(data, dict) or data.get("result") != "OK":
-            detail = data.get("resultText") if isinstance(data, dict) else type(data)
-            raise FnsiApiError(f"{endpoint}: result is not OK ({detail})")
+            # resultText is free text from the server: never log it as is
+            code = data.get("resultCode") if isinstance(data, dict) else None
+            code = code if isinstance(code, int) or str(code).isdigit() else None
+            raise FnsiApiError(f"{endpoint}: result is not OK (code {code})")
         return data
 
 

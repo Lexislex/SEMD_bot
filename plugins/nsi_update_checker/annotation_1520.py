@@ -91,12 +91,17 @@ def find_pair(get: ApiGet, target_version: str) -> Tuple[dict, dict]:
     if index + 1 >= len(versions):
         raise AnnotationUnavailable(f"no predecessor for {target_version}")
     target, predecessor = versions[index], versions[index + 1]
-    if _parse_publish(predecessor.get("publishDate")) >= _parse_publish(
-        target.get("publishDate")
-    ):
+    published = _parse_publish(target.get("publishDate"))
+    if _parse_publish(predecessor.get("publishDate")) >= published:
         # equal (or reversed) timestamps cannot identify the release by dates
         raise AnnotationUnavailable(
             f"ambiguous publish dates {predecessor.get('version')}→{target_version}"
+        )
+    newer = versions[index - 1] if index > 0 else None
+    if newer and _parse_publish(newer.get("publishDate")) <= published:
+        # a newer release in the same minute falls into the same compare interval
+        raise AnnotationUnavailable(
+            f"ambiguous publish dates {target_version}→{newer.get('version')}"
         )
     return predecessor, target
 
@@ -115,25 +120,71 @@ def fetch_changes(get: ApiGet, predecessor: dict, target: dict) -> List[dict]:
         if not isinstance(payload, dict) or not isinstance(payload.get("list"), list):
             raise AnnotationUnavailable("compare: no data.list in the response")
         chunk = payload["list"]
-        total = payload.get("total")
+        if not chunk and not rows:
+            # an explicit empty list is not a "complete diff without changes":
+            # the release does have changes, the interval just did not return them
+            raise AnnotationUnavailable("compare returned no records for the release")
+        page_total = payload.get("total")
+        if not isinstance(page_total, int) or isinstance(page_total, bool):
+            raise AnnotationUnavailable(f"compare: no numeric total ({page_total!r})")
+        if total is not None and page_total != total:
+            raise AnnotationUnavailable(
+                f"compare: total changed {total} → {page_total}"
+            )
+        total = page_total
         rows.extend(chunk)
-        if total is None or len(rows) >= total or len(chunk) < COMPARE_PAGE_SIZE:
-            break
-    if not rows:
-        # an explicit empty list is not a "complete diff without changes":
-        # the release does have changes, the interval just did not return them
-        raise AnnotationUnavailable("compare returned no records for the release")
-    if total is not None and len(rows) != total:
+        if len(rows) >= total or len(chunk) < COMPARE_PAGE_SIZE:
+            break  # a short page is the last one
+    if len(rows) != total:
         raise AnnotationUnavailable(f"compare incomplete: {len(rows)} of {total}")
     return rows
 
 
 def fetch_old_row(get: ApiGet, version: str, oid: str) -> dict:
+    """The record in the predecessor; must be exactly the requested key."""
     data = get("data", version=version, filters=f"{KEY}|{oid}|EQ", page=1, size=2)
     found = data.get("list") or []
-    if len(found) != 1:
+    if len(found) != 1 or data.get("total") not in (None, 1):
         raise AnnotationUnavailable(f"{KEY} {oid} in {version}: {len(found)} rows")
-    return {cell["column"]: cell["value"] for cell in found[0]}
+    columns = [cell["column"] for cell in found[0]]
+    if len(columns) != len(set(columns)):
+        raise AnnotationUnavailable(f"{KEY} {oid} in {version}: duplicate columns")
+    row = {cell["column"]: cell["value"] for cell in found[0]}
+    if str(row.get(KEY) or "").strip() != str(oid):
+        raise AnnotationUnavailable(
+            f"{KEY} {oid} in {version}: got a row of {KEY} {row.get(KEY)!r}"
+        )
+    return row
+
+
+_COUNTERS = {
+    "added": r"Добавлено записей:\s*(\d+)",
+    "changed": r"Изменено записей:\s*(\d+)",
+    "removed": r"Удалено записей:\s*(\d+)",
+    "fields": r"(?:Добавлено|Изменено|Удалено) полей:\s*(\d+)",
+}
+
+
+def check_counters(release_notes: Optional[str], inserts: int, updates: int) -> None:
+    """Cross-check compare with the counters FNSI publishes for the release.
+
+    Unparsable notes skip the check; a mismatch or a schema change refuses.
+    """
+    if not release_notes:
+        return
+    found = {
+        name: [int(n) for n in re.findall(pattern, release_notes)]
+        for name, pattern in _COUNTERS.items()
+    }
+    if not (found["added"] and found["changed"] and found["removed"]):
+        return
+    if any(found["fields"]):
+        raise AnnotationUnavailable("schema changed according to the release counters")
+    expected = (found["added"][0], found["changed"][0], found["removed"][0])
+    if expected != (inserts, updates, 0):
+        raise AnnotationUnavailable(
+            f"release counters {expected} differ from compare {(inserts, updates, 0)}"
+        )
 
 
 # ------------------------------------------------------------- normalisation
@@ -313,7 +364,10 @@ def render(inserts: List[dict], changes: List[FieldChange], limit: int) -> List[
 
 
 def build_1520_annotation(
-    get: ApiGet, target_version: str, max_chars: int
+    get: ApiGet,
+    target_version: str,
+    max_chars: int,
+    release_notes: Optional[str] = None,
 ) -> Annotation:
     """
     Build the "what changed" block for one release of 1520.
@@ -322,6 +376,7 @@ def build_1520_annotation(
         get: ``FnsiApi.get``-compatible callable (budgeted transport)
         target_version: the release being announced
         max_chars: room left in the message for this block (Telegram limit)
+        release_notes: FNSI counters of the release ("Добавлено записей: 3; …")
 
     Raises:
         AnnotationUnavailable: the release cannot be described completely.
@@ -340,6 +395,7 @@ def build_1520_annotation(
 
     inserts = [r for r in rows if r["operation"] == "INSERT"]
     updates = [r for r in rows if r["operation"] == "UPDATE"]
+    check_counters(release_notes, len(inserts), len(updates))
     if len(updates) > MAX_UPDATES:
         raise AnnotationUnavailable(f"too many updates: {len(updates)}")
     changes: List[FieldChange] = []
