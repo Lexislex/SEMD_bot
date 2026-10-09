@@ -2,13 +2,12 @@
 import logging
 from datetime import datetime
 from time import sleep
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 import requests
 
 from config import get_config
 from plugins.semd_checker.semd_logic import SEMDVersionFetcher
-from services.database_service import add_nsi_passport
 from services.proxy_utils import build_proxies, build_url
 from utils.retry import backoff_delay
 
@@ -50,7 +49,9 @@ def get_version(nsi: str, ver: str = "latest") -> dict:
         logger.error(error_msg)
         raise ConnectionError(error_msg)
 
-    request_timeout = getattr(cfg.apis, "fnsi_request_timeout", _DEFAULT_FNSI_REQUEST_TIMEOUT)
+    request_timeout = getattr(
+        cfg.apis, "fnsi_request_timeout", _DEFAULT_FNSI_REQUEST_TIMEOUT
+    )
     max_retries = getattr(cfg.apis, "fnsi_max_retries", _DEFAULT_FNSI_MAX_RETRIES)
 
     headers = {
@@ -200,64 +201,43 @@ def get_version(nsi: str, ver: str = "latest") -> dict:
     return fnsi_info
 
 
-def nsi_passport_updater(fnsi_oid: str, vers: str = "latest") -> Tuple[bool, dict]:
+def fetch_new_version(fnsi_oid: str) -> Optional[dict]:
     """
-    Обновляет паспорт справочника ФНСИ.
+    Получает паспорт справочника из ФНСИ, если его версия новее известной.
+
+    Ничего не сохраняет: паспорт записывается вызывающим кодом вместе с
+    заданием на уведомление (см. services/notification_store.py), иначе сбой
+    между записью паспорта и отправкой терял бы уведомление навсегда.
 
     Args:
         fnsi_oid: OID справочника
-        vers: версия для проверки
 
     Returns:
-        Tuple[bool, dict]:
-            - bool: обновлен ли справочник
-            - dict: информация о справочнике (если обновлен) или None (если нет/ошибка)
+        dict с информацией о справочнике (id, fullName, shortName, lastUpdate,
+        version, releaseNotes) или None, если версия не изменилась или
+        произошла ошибка.
     """
     try:
-        # Получаем информацию о текущей версии из базы
-        fnsi = SEMDVersionFetcher(fnsi_oid)
+        current_version = SEMDVersionFetcher(fnsi_oid).latest
+        fnsi_info = get_version(fnsi_oid)
 
-        # Проверяем, что объект fnsi не None
-        if fnsi is None:
-            logger.warning(
-                f"Не удалось получить информацию о справочнике {fnsi_oid} из базы"
-            )
-            return False, None
-
-        # Получаем актуальную информацию с ФНСИ
-        fnsi_info = get_version(fnsi_oid, vers)
-
-        # Проверяем, что fnsi_info не None и содержит необходимые поля
         if not fnsi_info or "version" not in fnsi_info:
             logger.warning(f"Невалидная информация от ФНСИ для справочника {fnsi_oid}")
-            return False, None
+            return None
 
-        # Проверяем, есть ли обновление
-        current_version = getattr(fnsi, "latest", None)
-        if current_version != fnsi_info["version"]:
-            # Пытаемся добавить новую версию в базу
-            success = add_nsi_passport(fnsi_info)
-            if success:
-                logger.info(
-                    f"Успешно обновлен справочник {fnsi_oid} до версии {fnsi_info['version']}"
-                )
-                return True, fnsi_info
-            else:
-                logger.error(f"Не удалось добавить справочник {fnsi_oid} в базу данных")
-                return False, None
-        else:
+        if current_version == fnsi_info["version"]:
             logger.debug(f"Обновлений для справочника {fnsi_oid} не найдено")
-            return False, None
+            return None
+        return fnsi_info
 
     except (ConnectionError, ValueError) as e:
         logger.error(f"Ошибка при обновлении справочника {fnsi_oid}: {e}")
-        logger.debug(f"Детали ошибки для {fnsi_oid}: {str(e)}")
-        return False, None
+        return None
 
     except Exception as e:
         logger.error(f"Неожиданная ошибка при обновлении справочника {fnsi_oid}: {e}")
         logger.exception(f"Детали исключения для {fnsi_oid}")
-        return False, None
+        return None
 
 
 if __name__ == "__main__":
