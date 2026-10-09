@@ -34,7 +34,7 @@ INFO = {
 
 def response(status=200, payload=None, chunks=None):
     """Streamed response: the body is read through raw.read1."""
-    resp = MagicMock(status_code=status)
+    resp = MagicMock(status_code=status, headers={})
     body = json.dumps(
         payload if payload is not None else {"result": "OK", "list": []}
     ).encode()
@@ -135,12 +135,42 @@ class TestFnsiApi:
         resp = requests.Response()
         resp.status_code = 200
         resp.raw = raw
+        resp.headers = raw.headers
         with patch("services.fnsi_client.monotonic", side_effect=lambda: now[0]):
             api, _ = self.make([resp], deadline=0)
             api.deadline = 10.0
             with pytest.raises(FnsiBudgetExceeded, match="while reading"):
                 api.get("compare")
         assert now[0] <= 11  # stopped right after the budget, not after ~100 bytes
+
+    def test_compressed_response_is_refused_without_decoding(self):
+        """A gzip body is never decoded: the decoder could read the socket many
+        times (e.g. a long gzip header) before returning data."""
+        import gzip
+        import io
+
+        from urllib3.response import HTTPResponse
+
+        buffer = io.BytesIO()
+        with gzip.GzipFile(filename="x" * 100, mode="wb", fileobj=buffer) as f:
+            f.write(json.dumps({"result": "OK", "list": []}).encode())
+        raw = HTTPResponse(
+            body=io.BytesIO(buffer.getvalue()),
+            preload_content=False,
+            status=200,
+            headers={"Content-Encoding": "gzip"},
+        )
+        resp = requests.Response()
+        resp.status_code = 200
+        resp.raw = raw
+        resp.headers = raw.headers
+        api, session = self.make([resp])
+
+        with pytest.raises(FnsiApiError, match="unexpected Content-Encoding gzip"):
+            api.get("compare")
+        assert session.get.call_args.kwargs["headers"] == {
+            "Accept-Encoding": "identity"
+        }
 
     def test_server_text_is_not_in_error(self):
         api, _ = self.make(

@@ -325,6 +325,9 @@ class FnsiApi:
                     proxies=build_proxies(url),
                     timeout=min(self._cfg.apis.fnsi_request_timeout, left),
                     stream=True,
+                    # no compression: a decoder may read the socket many times
+                    # before returning data, bypassing the budget checks
+                    headers={"Accept-Encoding": "identity"},
                 )
                 try:
                     if response.status_code in self.RETRY_STATUSES:
@@ -352,12 +355,16 @@ class FnsiApi:
         The requests timeout limits one socket wait, not the whole download, and
         ``iter_content`` returns only after filling its chunk, so a server sending
         a byte at a time would never hand control back. ``read1`` returns after a
-        single socket read: the budget is checked after every read, and one wait
-        is bounded by the request timeout (capped by the budget left).
+        single socket read (no decoder: the body is requested uncompressed and a
+        compressed one is refused): the budget is checked after every read, and
+        one wait is bounded by the request timeout (capped by the budget left).
         """
+        encoding = (response.headers.get("Content-Encoding") or "identity").lower()
+        if encoding != "identity":
+            raise FnsiApiError(f"{endpoint}: unexpected Content-Encoding {encoding}")
         chunks, size = [], 0
         while True:
-            chunk = response.raw.read1(65536, decode_content=True)
+            chunk = response.raw.read1(65536, decode_content=False)
             if not chunk:
                 break  # EOF; a truncated body fails JSON decoding
             size += len(chunk)
