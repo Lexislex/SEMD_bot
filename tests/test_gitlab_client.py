@@ -217,3 +217,18 @@ class TestClient:
             "per_page": 100,
             "path": "schematron",
         }
+
+    def test_get_commit(self, client):
+        with patch.object(
+            client.session, "get", return_value=_response(200, {"id": "a" * 40})
+        ) as get:
+            assert client.get_commit(REPO, "aaaaaaaa")["id"] == "a" * 40
+        assert get.call_args.args[0].endswith("/repository/commits/aaaaaaaa")
+
+    def test_merge_base(self, client):
+        with patch.object(
+            client.session, "get", return_value=_response(200, {"id": "b" * 40})
+        ) as get:
+            assert client.merge_base(REPO, "x", "y") == "b" * 40
+        assert get.call_args.args[0].endswith("/repository/merge_base")
+        assert get.call_args.kwargs["params"] == {"refs[]": ["x", "y"]}

@@ -66,6 +66,24 @@ announced.
 | GitLab 429 / 5xx / timeout | Retried with backoff (honors `Retry-After`, up to 60 s) |
 | Invalid token (401/403) | The cycle stops, error logged; changes already delivered are kept |
 
+## Backfill
+
+A new kind starts with a silent baseline, so changes published before it was
+deployed are not announced. To announce them, move the baseline back with
+`scripts/schematron_backfill.py`; the next regular cycle sends one message for
+the whole range:
+
+```bash
+# dry run: checks and the commits that will be announced, nothing is written
+uv run python scripts/schematron_backfill.py --semd 289 --kind xsd --since c682b1e3
+# write; --force is needed when a baseline already exists
+uv run python scripts/schematron_backfill.py --semd 289 --kind xsd --since c682b1e3 --force --apply
+```
+
+The script refuses when the stored repository differs from the resolved one,
+`--since` is not an ancestor of the current head, or the range has no commits
+in the kind's directory.
+
 ## Configuration (`.env`)
 
 | Variable | Default | Description |
@@ -100,6 +118,7 @@ Available to all users (`access_level = "all"`).
 - `formatters.py`: message and `.diff` formatting
 - `handlers.py`: sending notifications, menu
 - `data.py`: watched SEMD list
+- `backfill.py`: baseline backfill logic (CLI: `scripts/schematron_backfill.py`)
 - `services/gitlab_client.py`: GitLab REST client with retries
 - `services/schematron_store.py`: SQLite state (`schematron_watch`, `xsd_watch`)
 
