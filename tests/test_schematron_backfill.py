@@ -108,4 +108,87 @@ def test_no_commits_in_range(monitor, client):
 
 def test_unknown_semd(monitor):
     with pytest.raises(BackfillError, match="1520"):
+        prepare_backfill(monitor, "999", XSD, "cccccccc", watched=["999"])
+
+
+def test_not_watched_semd_refused(monitor, client):
+    monitor.semd_lookup = lambda oid: dict(SEMD, OID=oid)
+    with pytest.raises(BackfillError, match="WATCHED_SEMD"):
         prepare_backfill(monitor, "999", XSD, "cccccccc")
+    client.get_commit.assert_not_called()
+
+
+def test_apply_refuses_row_created_after_prepare(monitor, store):
+    plan = prepare_backfill(monitor, "289", XSD, "cccccccc")
+    baseline(store)  # цикл бота успел зафиксировать baseline
+
+    with pytest.raises(BackfillError, match="изменилось"):
+        apply_backfill(store, plan)
+    assert store.get("289", "xsd").last_sha == "e" * 40
+
+
+def test_apply_refuses_row_changed_after_prepare(monitor, store):
+    baseline(store)
+    plan = prepare_backfill(monitor, "289", XSD, "cccccccc", force=True)
+    baseline(store, sha="f" * 40)  # --force разрешал заменить увиденное, не это
+
+    with pytest.raises(BackfillError, match="изменилось"):
+        apply_backfill(store, plan)
+    assert store.get("289", "xsd").last_sha == "f" * 40
+
+
+def test_bot_cycle_does_not_overwrite_concurrent_backfill(client, store):
+    """Backfill written while the bot is inside a check survives the bot's write."""
+    baseline(store)
+    bot = SchematronMonitor(client, store, {"289": SEMD}.get, MagicMock())
+
+    def last_commit(repo, path):
+        if path == "xsd":
+            # скрипт пишет догон, пока бот ждёт ответа GitLab
+            prev = store.get("289", "xsd")
+            store.save_if_unchanged(
+                prev, WatchState("289", REPO.key, SINCE, "ok", kind="xsd")
+            )
+        return HEAD
+
+    client.get_last_commit.side_effect = last_commit
+    bot.check("289", XSD)
+
+    assert store.get("289", "xsd").last_sha == SINCE
+
+
+def test_status_save_does_not_overwrite_concurrent_backfill(client, store):
+    """Lookup-error status written by the bot keeps a concurrent backfill."""
+    baseline(store)
+    real_get = store.get
+    calls = []
+
+    def get_then_backfill(oid, kind="schematron"):
+        prev = real_get(oid, kind)
+        if kind == "xsd" and not calls:
+            calls.append(1)
+            # бот прочитал строку, скрипт успел записать догон
+            store.save_if_unchanged(
+                prev, WatchState("289", REPO.key, SINCE, "ok", kind="xsd")
+            )
+        return prev
+
+    store.get = get_then_backfill
+    bot = SchematronMonitor(client, store, {"289": None}.get, MagicMock())
+    bot.check_all(["289"])
+    store.get = real_get
+
+    assert store.get("289", "xsd").last_sha == SINCE
+
+
+def test_status_save_keeps_sha(client, store):
+    baseline(store)
+    bot = SchematronMonitor(
+        client, store, {"289": dict(SEMD, GIT_LINK=None)}.get, MagicMock()
+    )
+    bot.check_all(["289"])
+
+    state = store.get("289", "xsd")
+    assert state.status == "no_git_link"
+    assert state.last_sha == "e" * 40
+    assert state.last_changed == "2026-05-26T10:56:34"

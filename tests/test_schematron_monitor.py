@@ -1021,3 +1021,36 @@ class TestReviewFixes:
 
         assert [c.kind for c in changes] == [SCHEMATRON]
         assert notify.call_count == 1
+
+
+class TestCompareAndSet:
+    def test_save_if_unchanged(self, store):
+        state = WatchState("1", "r@b", "a" * 40, "ok", kind="xsd")
+        assert store.save_if_unchanged(None, state)
+        assert not store.save_if_unchanged(None, WatchState("1", kind="xsd"))
+
+        seen = store.get("1", "xsd")
+        newer = WatchState("1", "r@b", "b" * 40, "ok", kind="xsd")
+        assert store.save_if_unchanged(seen, newer)
+        assert not store.save_if_unchanged(seen, WatchState("1", kind="xsd"))
+        assert store.get("1", "xsd").last_sha == "b" * 40
+
+    def test_notify_skipped_when_row_changed_during_check(
+        self, monitor, client, store, notify
+    ):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331")
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+
+        def compare(repo, from_sha, to_sha):
+            seen = store.get("331")
+            store.save_if_unchanged(
+                seen, WatchState("331", seen.git_link, "c" * 40, "ok")
+            )
+            return {"commits": [], "diffs": [SCH_DIFF]}
+
+        client.compare.side_effect = compare
+
+        assert monitor.check("331") is None
+        notify.assert_not_called()
+        assert store.get("331").last_sha == "c" * 40

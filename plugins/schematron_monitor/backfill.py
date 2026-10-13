@@ -3,15 +3,18 @@ Manual backfill: move a SEMD baseline back so the next cycle announces
 changes that were published before monitoring of that kind started.
 
 The baseline is only stored; the notification itself is sent by the regular
-monitor cycle (one message for the whole range, with all its commits).
+monitor cycle (one message for the whole range). The write is a
+compare-and-set against the state shown to the operator, and the monitor
+writes the same way, so the bot does not have to be stopped.
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Collection, Dict, List, Optional
 
 from services.gitlab_client import GitLabClient, GitLabNotFoundError, SemdRepo
 from services.schematron_store import STATUS_OK, SchematronStore, WatchState
 
+from .data import WATCHED_SEMD
 from .monitor import ArtifactKind, SchematronMonitor, stored_repo_key
 
 
@@ -36,10 +39,11 @@ def prepare_backfill(
     kind: ArtifactKind,
     since: str,
     force: bool = False,
+    watched: Collection[str] = tuple(WATCHED_SEMD),
 ) -> BackfillPlan:
     """Validate a backfill without changing anything.
 
-    Checks that the SEMD resolves to the same repository the monitor uses,
+    Checks that the SEMD is watched by the bot, resolves to the same repository the monitor uses,
     ``since`` exists and is an ancestor of the current head, the range
     contains commits touching the kind's directory, and an existing
     baseline is overwritten only with ``force``.
@@ -49,6 +53,12 @@ def prepare_backfill(
     """
     client: GitLabClient = monitor.client
     store: SchematronStore = monitor.store
+
+    if semd_oid not in watched:
+        raise BackfillError(
+            f"СЭМД {semd_oid} не отслеживается ботом (нет в WATCHED_SEMD) — "
+            "уведомления не будет"
+        )
 
     info = monitor.semd_lookup(semd_oid)
     if info is None:
@@ -99,7 +109,12 @@ def prepare_backfill(
 
 
 def apply_backfill(store: SchematronStore, plan: BackfillPlan) -> WatchState:
-    """Store the plan's baseline; the next monitor cycle announces the range."""
+    """Store the plan's baseline; the next monitor cycle announces the range.
+
+    Raises:
+        BackfillError: the stored state changed since the plan was prepared
+            (e.g. the bot cycle wrote it); nothing is written.
+    """
     state = WatchState(
         semd_oid=plan.semd_oid,
         git_link=plan.repo.key,
@@ -108,5 +123,9 @@ def apply_backfill(store: SchematronStore, plan: BackfillPlan) -> WatchState:
         last_changed=plan.previous.last_changed if plan.previous else None,
         kind=plan.kind.key,
     )
-    store.save(state)
+    if not store.save_if_unchanged(plan.previous, state):
+        raise BackfillError(
+            "Состояние в БД изменилось после проверки (вероятно, прошёл цикл бота) — "
+            "ничего не записано, запустите скрипт заново"
+        )
     return state

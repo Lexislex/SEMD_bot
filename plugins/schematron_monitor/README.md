@@ -71,7 +71,8 @@ announced.
 A new kind starts with a silent baseline, so changes published before it was
 deployed are not announced. To announce them, move the baseline back with
 `scripts/schematron_backfill.py`; the next regular cycle sends one message for
-the whole range:
+the range (if the range only touches non-matching files such as `.gitkeep`,
+the baseline advances silently):
 
 ```bash
 # dry run: checks and the commits that will be announced, nothing is written
@@ -81,8 +82,17 @@ uv run python scripts/schematron_backfill.py --semd 289 --kind xsd --since c682b
 ```
 
 The script refuses when the stored repository differs from the resolved one,
-`--since` is not an ancestor of the current head, or the range has no commits
-in the kind's directory.
+`--since` is not an ancestor of the current head, the range has no commits
+in the kind's directory, or the SEMD is not in `WATCHED_SEMD`.
+
+The bot does not have to be stopped while the script runs, provided the running
+bot process already has this version (deployed **and restarted**; an old
+process keeps the old code and can overwrite the backfill). The script and the
+monitor both write
+with compare-and-set (`SchematronStore.save_if_unchanged`, `BEGIN IMMEDIATE`).
+If the bot cycle changes the row between the dry-run output and the write, the
+script refuses and asks to be rerun; if the script writes during a bot check,
+the bot skips its write and rechecks next cycle.
 
 ## Configuration (`.env`)
 

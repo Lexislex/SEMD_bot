@@ -19,7 +19,7 @@ Algorithm per SEMD and kind:
 """
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from services.gitlab_client import (
@@ -305,20 +305,20 @@ class SchematronMonitor:
             raise
         except GitLabNotFoundError:
             state.status = STATUS_REPO_NOT_FOUND
-            self.store.save(state)
+            self._save(prev, state)
             logger.warning(
                 f"СЭМД {semd_oid}: репозиторий {repo.project_path}@{repo.ref} не найден"
             )
             return None
         except GitLabError as e:
             state.status = STATUS_ERROR
-            self.store.save(state)
+            self._save(prev, state)
             logger.error(f"СЭМД {semd_oid} ({kind.key}): ошибка GitLab: {e}")
             return None
 
         if head is None:
             state.status = kind.no_files_status
-            self.store.save(state)
+            self._save(prev, state)
             logger.info(
                 f"СЭМД {semd_oid}: в ветке {repo.ref} нет файлов в {kind.directory}/"
             )
@@ -329,21 +329,25 @@ class SchematronMonitor:
 
         if state.last_sha is None:
             state.last_sha = head_sha
-            self.store.save(state)
-            logger.info(
-                f"СЭМД {semd_oid}: зафиксирована базовая версия {kind.key} {head_sha[:8]}"
-            )
+            if self._save(prev, state):
+                logger.info(
+                    f"СЭМД {semd_oid}: зафиксирована базовая версия {kind.key} "
+                    f"{head_sha[:8]}"
+                )
             return None
 
         if head_sha == state.last_sha:
-            self.store.save(state)
+            self._save(prev, state)
             return None
 
         change = self._build_change(semd_oid, kind, info, repo, state.last_sha, head)
         if change is None:
             # Изменения не затронули файлы вида (например, .gitkeep) — тихо сдвигаем baseline
             state.last_sha = head_sha
-            self.store.save(state)
+            self._save(prev, state)
+            return None
+
+        if not self._unchanged(prev):
             return None
 
         # Если уведомление не ушло — sha не сдвигаем, повторим в следующем цикле
@@ -351,11 +355,38 @@ class SchematronMonitor:
 
         state.last_sha = head_sha
         state.last_changed = head.get("committed_date")
-        self.store.save(state)
-        logger.info(
-            f"СЭМД {semd_oid}: {kind.key} изменён {change.from_sha[:8]}..{head_sha[:8]}"
-        )
+        if self._save(prev, state):
+            logger.info(
+                f"СЭМД {semd_oid}: {kind.key} изменён "
+                f"{change.from_sha[:8]}..{head_sha[:8]}"
+            )
+        # Уведомление доставлено в любом случае — изменение в результате
         return change
+
+    def _unchanged(self, prev: Optional[WatchState]) -> bool:
+        """The stored row was not changed by another writer since ``prev``."""
+        current = self.store.get(prev.semd_oid, prev.kind) if prev is not None else None
+        if prev is not None and current != prev:
+            logger.warning(
+                f"СЭМД {prev.semd_oid} ({prev.kind}): состояние изменено извне "
+                f"во время проверки, повторим в следующем цикле"
+            )
+            return False
+        return True
+
+    def _save(self, prev: Optional[WatchState], state: WatchState) -> bool:
+        """Save unless another writer (the backfill script) changed the row.
+
+        Returns:
+            False if the write was skipped because of a concurrent change.
+        """
+        if self.store.save_if_unchanged(prev, state):
+            return True
+        logger.warning(
+            f"СЭМД {state.semd_oid} ({state.kind}): состояние изменено извне "
+            f"во время проверки, запись пропущена; повторим в следующем цикле"
+        )
+        return False
 
     def _resolve_repo(self, semd_oid: str, git_link: str) -> SemdRepo:
         """Package OID -> SemdRepo: dictionary 638 first, heuristic as fallback.
@@ -516,8 +547,10 @@ class SchematronMonitor:
     ) -> None:
         """Store a status for every kind, keeping the existing baselines."""
         for kind in kinds:
-            state = self.store.get(semd_oid, kind.key) or WatchState(
-                semd_oid=semd_oid, kind=kind.key
+            prev = self.store.get(semd_oid, kind.key)
+            state = (
+                replace(prev, status=status)
+                if prev is not None
+                else WatchState(semd_oid=semd_oid, status=status, kind=kind.key)
             )
-            state.status = status
-            self.store.save(state)
+            self._save(prev, state)

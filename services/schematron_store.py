@@ -11,7 +11,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,18 @@ class WatchState:
     last_changed: Optional[str] = None
     # Определяется таблицей, в строке не хранится
     kind: str = KIND_SCHEMATRON
+
+
+def _row_values(state: Optional[WatchState]) -> Optional[Tuple]:
+    if state is None:
+        return None
+    return (
+        state.git_link,
+        state.last_sha,
+        state.status,
+        state.last_checked,
+        state.last_changed,
+    )
 
 
 class SchematronStore:
@@ -126,3 +138,54 @@ class SchematronStore:
                 )
         finally:
             con.close()
+
+    def save_if_unchanged(
+        self, expected: Optional[WatchState], state: WatchState
+    ) -> bool:
+        """Compare-and-set: save ``state`` only if the stored row still equals
+        ``expected`` (None — the row must not exist).
+
+        Protects against a concurrent writer (the bot cycle vs. the backfill
+        script). The check and the write run in one ``BEGIN IMMEDIATE``
+        transaction.
+
+        Returns:
+            False if the row changed since ``expected`` was read; nothing is
+            written then.
+        """
+        table = self._table(state.kind)
+        con = self._connect()
+        con.isolation_level = None  # транзакцией управляем сами
+        try:
+            con.execute("BEGIN IMMEDIATE")
+            try:
+                row = con.execute(
+                    "SELECT git_link, last_sha, status, last_checked, last_changed "
+                    f"FROM {table} WHERE semd_oid = ?",
+                    (state.semd_oid,),
+                ).fetchone()
+                if row != _row_values(expected):
+                    con.execute("ROLLBACK")
+                    return False
+                last_checked = datetime.now().isoformat(timespec="seconds")
+                con.execute(
+                    f"INSERT OR REPLACE INTO {table} "
+                    "(semd_oid, git_link, last_sha, status, last_checked, last_changed) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        state.semd_oid,
+                        state.git_link,
+                        state.last_sha,
+                        state.status,
+                        last_checked,
+                        state.last_changed,
+                    ),
+                )
+                con.execute("COMMIT")
+            except BaseException:
+                con.execute("ROLLBACK")
+                raise
+        finally:
+            con.close()
+        state.last_checked = last_checked
+        return True
