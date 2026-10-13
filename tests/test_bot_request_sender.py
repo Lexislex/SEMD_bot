@@ -69,3 +69,43 @@ def test_sender_installed():
     with patch.object(apihelper, "CUSTOM_REQUEST_SENDER", None):
         SEMDBotCore._apply_telegram_api_settings(config)
         assert apihelper.CUSTOM_REQUEST_SENDER is send_params_in_body
+
+
+@pytest.fixture
+def captured():
+    """Real telebot request preparation with the network send intercepted."""
+    response = MagicMock(status_code=200)
+    response.json.return_value = {"ok": True, "result": []}
+    with patch.object(apihelper, "CUSTOM_REQUEST_SENDER", send_params_in_body):
+        with patch.object(
+            apihelper, "_get_req_session", return_value=requests.Session()
+        ):
+            with patch.object(requests.Session, "send", return_value=response) as send:
+                yield send
+
+
+def test_telebot_send_data_with_input_file(captured):
+    from io import BytesIO
+
+    from telebot import types
+
+    apihelper.send_data(
+        "T",
+        42,
+        types.InputFile(BytesIO(b"diff"), "a.diff"),
+        "document",
+        disable_notification=True,
+    )
+
+    prepared = captured.call_args.args[0]
+    assert "?" not in prepared.url
+    assert b'name="chat_id"' in prepared.body and b"42" in prepared.body
+    assert b'filename="a.diff"' in prepared.body
+
+
+def test_telebot_get_updates_stays_get(captured):
+    apihelper.get_updates("T", offset=5, timeout=30, long_polling_timeout=120)
+
+    prepared = captured.call_args.args[0]
+    assert prepared.method == "GET"
+    assert "offset=5" in prepared.url
