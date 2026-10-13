@@ -1,9 +1,12 @@
+import sqlite3
 from unittest.mock import MagicMock
 
 import pytest
 
+from plugins.schematron_monitor import monitor as monitor_module
 from plugins.schematron_monitor.formatters import (
     build_diff_text,
+    diff_file_name,
     diff_stats,
     format_change_message,
     is_night,
@@ -11,6 +14,13 @@ from plugins.schematron_monitor.formatters import (
     with_inline_diff,
 )
 from plugins.schematron_monitor.monitor import (
+    MAX_ATTACHED_FILES,
+    SCHEMATRON,
+    SKIP_DOWNLOAD_FAILED,
+    SKIP_LIMIT_EXCEEDED,
+    SKIP_LIST_FAILED,
+    SKIP_TOO_LARGE,
+    XSD,
     NotificationError,
     SchematronMonitor,
     is_schematron_path,
@@ -22,6 +32,8 @@ from services.gitlab_client import (
     GitLabNotFoundError,
 )
 from services.schematron_store import (
+    STATUS_ERROR,
+    STATUS_NO_FILES,
     STATUS_NO_GIT_LINK,
     STATUS_NO_SCHEMATRON,
     STATUS_NOT_IN_1520,
@@ -375,9 +387,18 @@ class TestMonitor:
         assert store.get("5").status == STATUS_NO_GIT_LINK  # цикл продолжился
 
     def test_check_all_continues_after_error(self, monitor, client, store):
-        client.get_last_commit.side_effect = [RuntimeError("boom"), commit("aaaaaaaa")]
+        calls = []
+
+        def last_commit(repo, path):
+            calls.append(path)
+            if len(calls) == 1:
+                raise RuntimeError("boom")
+            return commit("aaaaaaaa")
+
+        client.get_last_commit.side_effect = last_commit
         monitor.check_all(["331", "331"])
         assert store.get("331").last_sha == "aaaaaaaa" * 5
+        assert store.get("331", "xsd").last_sha == "aaaaaaaa" * 5
 
     def test_commits_filtered_to_schematron(self, monitor, client):
         client.get_last_commit.return_value = commit("aaaaaaaa")
@@ -507,3 +528,496 @@ class TestFormatters:
     def test_is_night(self):
         assert is_night(23) and is_night(3)
         assert not is_night(8) and not is_night(21)
+
+
+XSD_DIFF = {
+    "old_path": "xsd/SEMD_P6/STRUCTURED_BODY.xsd",
+    "new_path": "xsd/SEMD_P6/STRUCTURED_BODY.xsd",
+    "diff": '@@ -1 +1 @@\n-<xsd:attribute use="required"/>\n+<xsd:attribute use="optional"/>\n',
+    "new_file": False,
+    "renamed_file": False,
+    "deleted_file": False,
+}
+
+
+def by_kind(sch: str, xsd: str):
+    """get_last_commit side effect: separate head per kind directory."""
+    heads = {"schematron": sch, "xsd": xsd}
+
+    def last_commit(repo, path):
+        return commit(heads[path])
+
+    return last_commit
+
+
+def compare_by_target(diffs_by_sha: dict):
+    """compare side effect: diffs depend on the target sha (= kind)."""
+
+    def compare(repo, from_sha, to_sha):
+        return {"commits": [], "diffs": diffs_by_sha[to_sha[:8]]}
+
+    return compare
+
+
+class TestKinds:
+    def test_kind_paths(self):
+        assert XSD.matches_path("xsd/XSD CDA/coreschemas/voc.xsd")
+        assert XSD.matches_path("xsd/a/B.XSD")
+        assert not XSD.matches_path("xsd/.gitkeep")
+        assert not XSD.matches_path("schematron/x.sch")
+        assert not SCHEMATRON.matches_path("xsd/a.xsd")
+        assert XSD.matches_diff({"old_path": "xsd/a.xsd", "new_path": "other/a.xsd"})
+
+    def test_first_run_sets_both_baselines(self, monitor, client, store, notify):
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+
+        assert monitor.check_all(["331"]) == []
+
+        assert store.get("331").last_sha == "aaaaaaaa" * 5
+        assert store.get("331", "xsd").last_sha == "cccccccc" * 5
+        paths = [c.kwargs["path"] for c in client.get_last_commit.call_args_list]
+        assert paths == ["schematron", "xsd"]
+        notify.assert_not_called()
+
+    def test_xsd_change_notifies_with_xsd_kind(self, monitor, client, store, notify):
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+        monitor.check_all(["331"])
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "dddddddd")
+        client.compare.return_value = {"commits": [], "diffs": [XSD_DIFF, SCH_DIFF]}
+
+        changes = monitor.check_all(["331"])
+
+        assert len(changes) == 1
+        change = changes[0]
+        assert change.kind is XSD
+        assert change.diffs == [XSD_DIFF]
+        assert change.tree_url.endswith("/xsd")
+        assert client.list_commits.call_args.kwargs["path"] == "xsd"
+        assert store.get("331", "xsd").last_sha == "dddddddd" * 5
+        assert store.get("331").last_sha == "aaaaaaaa" * 5
+
+    def test_sch_only_commit_does_not_trigger_xsd(self, monitor, client, store, notify):
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+        monitor.check_all(["331"])
+        # XSD-голова сдвинулась, но в диапазоне только .sch
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "dddddddd")
+        client.compare.return_value = {"commits": [], "diffs": [SCH_DIFF]}
+
+        assert monitor.check_all(["331"]) == []
+        notify.assert_not_called()
+        assert store.get("331", "xsd").last_sha == "dddddddd" * 5
+
+    def test_both_kinds_changed_two_deliveries(self, monitor, client, notify):
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+        monitor.check_all(["331"])
+        client.get_last_commit.side_effect = by_kind("bbbbbbbb", "dddddddd")
+        client.compare.side_effect = compare_by_target(
+            {"bbbbbbbb": [SCH_DIFF], "dddddddd": [XSD_DIFF]}
+        )
+
+        changes = monitor.check_all(["331"])
+
+        assert [c.kind for c in changes] == [SCHEMATRON, XSD]
+        assert notify.call_count == 2
+
+    @pytest.mark.parametrize(
+        "error", [NotificationError("no chats"), RuntimeError("boom")]
+    )
+    def test_xsd_failure_keeps_schematron_result(
+        self, monitor, client, store, notify, error
+    ):
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+        monitor.check_all(["331"])
+        client.get_last_commit.side_effect = by_kind("bbbbbbbb", "dddddddd")
+        client.compare.side_effect = compare_by_target(
+            {"bbbbbbbb": [SCH_DIFF], "dddddddd": [XSD_DIFF]}
+        )
+        notify.side_effect = [None, error]
+
+        changes = monitor.check_all(["331"])
+
+        assert [c.kind for c in changes] == [SCHEMATRON]
+        assert store.get("331").last_sha == "bbbbbbbb" * 5
+        assert store.get("331", "xsd").last_sha == "cccccccc" * 5
+
+    def test_schematron_failure_does_not_block_xsd(
+        self, monitor, client, store, notify
+    ):
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+        monitor.check_all(["331"])
+        client.get_last_commit.side_effect = by_kind("bbbbbbbb", "dddddddd")
+        client.compare.side_effect = compare_by_target(
+            {"bbbbbbbb": [SCH_DIFF], "dddddddd": [XSD_DIFF]}
+        )
+        notify.side_effect = [NotificationError("down"), None]
+
+        changes = monitor.check_all(["331"])
+
+        assert [c.kind for c in changes] == [XSD]
+        assert store.get("331").last_sha == "aaaaaaaa" * 5
+        assert store.get("331", "xsd").last_sha == "dddddddd" * 5
+
+    def test_auth_error_on_xsd_returns_delivered_and_stops(
+        self, monitor, client, store, notify
+    ):
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+        monitor.check_all(["331"])
+        heads = by_kind("bbbbbbbb", "dddddddd")
+
+        def last_commit(repo, path):
+            if path == "xsd":
+                raise GitLabAuthError("401")
+            return heads(repo, path)
+
+        client.get_last_commit.side_effect = last_commit
+        client.get_last_commit.reset_mock()
+        client.compare.return_value = {"commits": [], "diffs": [SCH_DIFF]}
+
+        changes = monitor.check_all(["331", "331"])
+
+        assert [c.kind for c in changes] == [SCHEMATRON]
+        assert store.get("331").last_sha == "bbbbbbbb" * 5
+        assert client.get_last_commit.call_count == 2  # второй OID не проверялся
+
+    def test_check_single_kind_raises_notification_error(self, monitor, client, notify):
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+        monitor.check("331", XSD)
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "dddddddd")
+        client.compare.return_value = {"commits": [], "diffs": [XSD_DIFF]}
+        notify.side_effect = NotificationError("no chats")
+
+        with pytest.raises(NotificationError):
+            monitor.check("331", XSD)
+
+    def test_lookup_errors_saved_for_both_kinds(self, monitor, client, store):
+        store.save(WatchState(semd_oid="5", last_sha="s" * 40, kind="xsd"))
+
+        monitor.check_all(["404", "5"])
+
+        assert store.get("404").status == STATUS_NOT_IN_1520
+        assert store.get("404", "xsd").status == STATUS_NOT_IN_1520
+        assert store.get("5", "xsd").status == STATUS_NO_GIT_LINK
+        assert store.get("5", "xsd").last_sha == "s" * 40  # baseline сохранён
+        client.get_last_commit.assert_not_called()
+
+    def test_repo_change_resets_both_baselines(self, monitor, client, store, notify):
+        for kind in ("schematron", "xsd"):
+            store.save(
+                WatchState(
+                    semd_oid="331", git_link="semd/old@1", last_sha="o" * 40, kind=kind
+                )
+            )
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+
+        assert monitor.check_all(["331"]) == []
+
+        assert store.get("331").last_sha == "aaaaaaaa" * 5
+        assert store.get("331", "xsd").last_sha == "cccccccc" * 5
+        client.compare.assert_not_called()
+
+    def test_no_xsd_files_status(self, monitor, client, store):
+        def last_commit(repo, path):
+            return commit("aaaaaaaa") if path == "schematron" else None
+
+        client.get_last_commit.side_effect = last_commit
+        monitor.check_all(["331"])
+
+        assert store.get("331").status == STATUS_OK
+        assert store.get("331", "xsd").status == STATUS_NO_FILES
+
+
+class TestAttachments:
+    def _rewritten(self, monitor, client, files):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331", XSD)
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        client.compare.side_effect = GitLabNotFoundError("404")
+        client.list_files.return_value = files
+        return monitor.check("331", XSD)
+
+    def test_limit_allows_exactly_max(self, monitor, client):
+        files = [f"xsd/f{i}.xsd" for i in range(MAX_ATTACHED_FILES)]
+        change = self._rewritten(monitor, client, files + ["xsd/.gitkeep"])
+
+        assert [p for p, _ in change.attachments] == files
+        assert change.skipped == []
+
+    def test_limit_exceeded_downloads_nothing(self, monitor, client):
+        files = [f"xsd/f{i}.xsd" for i in range(MAX_ATTACHED_FILES + 1)]
+        change = self._rewritten(monitor, client, files)
+
+        client.get_raw_file.assert_not_called()
+        assert change.attachments == []
+        assert change.skipped == [(p, SKIP_LIMIT_EXCEEDED) for p in files]
+
+    def test_limit_applies_to_truncated_compare(self, monitor, client):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331", XSD)
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        diffs = [
+            dict(
+                XSD_DIFF,
+                new_path=f"xsd/f{i}.xsd",
+                old_path=f"xsd/f{i}.xsd",
+                too_large=True,
+            )
+            for i in range(MAX_ATTACHED_FILES + 1)
+        ]
+        client.compare.return_value = {"commits": [], "diffs": diffs}
+
+        change = monitor.check("331", XSD)
+
+        client.get_raw_file.assert_not_called()
+        assert len(change.skipped) == MAX_ATTACHED_FILES + 1
+
+    def test_failed_and_too_large_are_skipped(self, monitor, client, monkeypatch):
+        monkeypatch.setattr(monitor_module, "MAX_DOCUMENT_BYTES", 10)
+
+        def raw(repo, path, ref):
+            if path.endswith("broken.xsd"):
+                raise GitLabError("500")
+            return b"x" * (100 if path.endswith("big.xsd") else 5)
+
+        client.get_raw_file.side_effect = raw
+        change = self._rewritten(
+            monitor, client, ["xsd/ok.xsd", "xsd/broken.xsd", "xsd/big.xsd"]
+        )
+
+        assert [p for p, _ in change.attachments] == ["xsd/ok.xsd"]
+        assert change.skipped == [
+            ("xsd/broken.xsd", SKIP_DOWNLOAD_FAILED),
+            ("xsd/big.xsd", SKIP_TOO_LARGE),
+        ]
+
+    def test_rename_out_of_kind_dir_not_downloaded(self, monitor, client):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331", XSD)
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        moved = dict(
+            XSD_DIFF, old_path="xsd/a.xsd", new_path="old/a.xsd", too_large=True
+        )
+        client.compare.return_value = {"commits": [], "diffs": [moved]}
+
+        change = monitor.check("331", XSD)
+
+        assert change.diffs == [moved]
+        client.get_raw_file.assert_not_called()
+
+
+class TestKindFormatting:
+    def _change(self, monitor, client, **kwargs):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331", XSD)
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        client.compare.return_value = {"commits": [], "diffs": [XSD_DIFF]}
+        change = monitor.check("331", XSD)
+        for key, value in kwargs.items():
+            setattr(change, key, value)
+        return change
+
+    def test_xsd_message(self, monitor, client):
+        change = self._change(monitor, client)
+        text = format_change_message(change, client)
+
+        assert text.startswith("📐 <b>Изменена XSD-схема СЭМД</b>")
+        assert "Папка xsd" in text
+        assert text.endswith("#XSD #СЭМД_331")
+        assert diff_file_name(change).startswith("xsd_331_")
+
+    def test_schematron_diff_name_unchanged(self, monitor, client):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331")
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        client.compare.return_value = {"commits": [], "diffs": [SCH_DIFF]}
+        change = monitor.check("331")
+
+        assert diff_file_name(change) == "schematron_331_aaaaaaaa_bbbbbbbb.diff"
+
+    @pytest.mark.parametrize(
+        "attachments, skipped, expected",
+        [
+            ([("xsd/a.xsd", b"x")], [], "Текущая версия XSD-схемы приложена файлом"),
+            ([], [("xsd/a.xsd", SKIP_LIMIT_EXCEEDED)], "Файлов слишком много (1)"),
+            (
+                [("xsd/a.xsd", b"x")],
+                [("xsd/b.xsd", SKIP_TOO_LARGE)],
+                "Приложено файлов: 1; часть файлов недоступна",
+            ),
+            (
+                [],
+                [("xsd/b.xsd", SKIP_DOWNLOAD_FAILED)],
+                "Файлы не приложены (недоступны или превышают лимит)",
+            ),
+        ],
+    )
+    def test_attachment_note_matches_reality(
+        self, monitor, client, attachments, skipped, expected
+    ):
+        change = self._change(
+            monitor,
+            client,
+            history_rewritten=True,
+            attachments=attachments,
+            skipped=skipped,
+        )
+        text = format_change_message(change, client)
+
+        assert expected in text
+        if not attachments:
+            assert "приложена файлом" not in text
+
+
+class TestStoreKinds:
+    def test_kinds_are_independent(self, store):
+        store.save(WatchState(semd_oid="1", last_sha="s" * 40))
+        store.save(WatchState(semd_oid="1", last_sha="x" * 40, kind="xsd"))
+
+        # Старые вызовы без kind видят только схематрон
+        assert store.get("1").last_sha == "s" * 40
+        assert store.get("1").kind == "schematron"
+        assert {k: v.last_sha for k, v in store.get_all().items()} == {"1": "s" * 40}
+        assert store.get("1", "xsd").last_sha == "x" * 40
+        assert store.get_all("xsd")["1"].kind == "xsd"
+
+    def test_existing_schematron_rows_untouched(self, tmp_path):
+        db = tmp_path / "old.sqlite"
+        con = sqlite3.connect(db)
+        con.execute(
+            "CREATE TABLE schematron_watch (semd_oid TEXT PRIMARY KEY, git_link TEXT,"
+            " last_sha TEXT, status TEXT, last_checked TEXT, last_changed TEXT)"
+        )
+        con.execute(
+            "INSERT INTO schematron_watch VALUES ('289', 'semd/x@y', 'abc', 'ok', 't', NULL)"
+        )
+        con.commit()
+        con.close()
+
+        store = SchematronStore(db)
+
+        assert store.get("289") == WatchState("289", "semd/x@y", "abc", "ok", "t", None)
+        assert store.get("289", "xsd") is None
+
+    def test_unknown_kind_rejected(self, store):
+        with pytest.raises(ValueError):
+            store.get("1", "xsd_watch; DROP TABLE x")
+
+
+class TestReviewFixes:
+    def _truncated_change(self, monitor, client, count):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331", XSD)
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        diffs = [
+            dict(
+                XSD_DIFF,
+                new_path=f"xsd/f{i}.xsd",
+                old_path=f"xsd/f{i}.xsd",
+                too_large=True,
+            )
+            for i in range(count)
+        ]
+        client.compare.return_value = {"commits": [], "diffs": diffs}
+        return monitor.check("331", XSD)
+
+    def test_regular_compare_reports_limit_exceeded(self, monitor, client):
+        change = self._truncated_change(monitor, client, MAX_ATTACHED_FILES + 1)
+        text = format_change_message(change, client)
+
+        assert f"Файлов слишком много ({MAX_ATTACHED_FILES + 1})" in text
+        assert "Текущая версия" not in text
+
+    def test_regular_compare_reports_partial_failure(self, monitor, client):
+        def raw(repo, path, ref):
+            if path == "xsd/f1.xsd":
+                raise GitLabError("500")
+            return b"<x/>"
+
+        client.get_raw_file.side_effect = raw
+        change = self._truncated_change(monitor, client, 2)
+        text = format_change_message(change, client)
+
+        assert change.skipped == [("xsd/f1.xsd", SKIP_DOWNLOAD_FAILED)]
+        assert "Приложено файлов: 1; часть файлов недоступна" in text
+        assert "Текущая версия" not in text
+
+    def test_regular_compare_all_attached_has_no_note(self, monitor, client):
+        change = self._truncated_change(monitor, client, 2)
+        text = format_change_message(change, client)
+
+        assert len(change.attachments) == 2
+        assert "📎" not in text  # по строкам файлов уже видно «приложена файлом»
+
+    def test_whole_set_several_files(self, monitor, client):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331", XSD)
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        client.compare.side_effect = GitLabNotFoundError("404")
+        client.list_files.return_value = ["xsd/a.xsd", "xsd/b.xsd"]
+
+        change = monitor.check("331", XSD)
+
+        assert "Текущая версия XSD-схемы приложена, файлов: 2." in (
+            format_change_message(change, client)
+        )
+
+    @pytest.mark.parametrize("branch", ["rewritten", "timeout"])
+    def test_list_files_failure_is_reported(self, monitor, client, store, branch):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        monitor.check("331", XSD)
+        client.get_last_commit.return_value = commit("bbbbbbbb")
+        if branch == "rewritten":
+            client.compare.side_effect = GitLabNotFoundError("404")
+        else:
+            client.compare.return_value = {
+                "compare_timeout": True,
+                "commits": [],
+                "diffs": [],
+            }
+        client.list_files.side_effect = GitLabError("500")
+
+        change = monitor.check("331", XSD)
+
+        assert change.skipped == [("xsd/", SKIP_LIST_FAILED)]
+        assert "Не удалось получить список файлов" in format_change_message(
+            change, client
+        )
+        # Доставка текста не блокируется — baseline сдвинут
+        assert store.get("331", "xsd").last_sha == "bbbbbbbb" * 5
+
+    def test_lookup_exception_marks_both_kinds_and_continues(
+        self, client, store, notify
+    ):
+        client.get_last_commit.return_value = commit("aaaaaaaa")
+        ok = SchematronMonitor(client, store, {"331": SEMD}.get, notify)
+        ok.check_all(["331"])
+
+        def lookup(oid):
+            if oid == "331":
+                raise RuntimeError("1520 broken")
+            return {"OID": oid, "NAME": "x", "GIT_LINK": None}
+
+        broken = SchematronMonitor(client, store, lookup, notify)
+        broken.check_all(["331", "5"])
+
+        for kind in ("schematron", "xsd"):
+            assert store.get("331", kind).status == STATUS_ERROR
+            assert store.get("331", kind).last_sha == "aaaaaaaa" * 5
+            assert store.get("5", kind).status == STATUS_NO_GIT_LINK
+
+    def test_auth_error_in_lookup_returns_accumulated(self, client, store, notify):
+        client.get_last_commit.side_effect = by_kind("aaaaaaaa", "cccccccc")
+        monitor = SchematronMonitor(client, store, {"331": SEMD}.get, notify)
+        monitor.check_all(["331"])
+        client.get_last_commit.side_effect = by_kind("bbbbbbbb", "cccccccc")
+        client.compare.return_value = {"commits": [], "diffs": [SCH_DIFF]}
+
+        def lookup(oid):
+            if oid == "331":
+                return SEMD
+            raise GitLabAuthError("401")
+
+        monitor.semd_lookup = lookup
+        changes = monitor.check_all(["331", "9", "331"])
+
+        assert [c.kind for c in changes] == [SCHEMATRON]
+        assert notify.call_count == 1

@@ -7,8 +7,8 @@ from plugins.base import ScheduledPlugin
 class Plugin(ScheduledPlugin):
     # Plugin metadata
     access_level = "all"
-    display_name = "🧩 Схематроны СЭМД"
-    description = "Мониторинг изменений схематронов СЭМД в GitLab Минздрава"
+    display_name = "🧩 Схематроны и XSD СЭМД"
+    description = "Мониторинг изменений схематронов и XSD-схем СЭМД в GitLab Минздрава"
 
     def __init__(self, bot, config):
         super().__init__(bot, config)
@@ -19,12 +19,12 @@ class Plugin(ScheduledPlugin):
         return "Schematron_Monitor"
 
     def get_version(self) -> str:
-        return "1.0.0"
+        return "1.1.0"
 
     def initialize(self) -> bool:
         if not self.config.gitlab.token:
             self.logger.warning(
-                "GITLAB_TOKEN не задан — мониторинг схематронов отключён"
+                "GITLAB_TOKEN не задан — мониторинг схематронов и XSD отключён"
             )
             return False
         try:
@@ -52,7 +52,7 @@ class Plugin(ScheduledPlugin):
         ]
 
     def get_schedule_config(self) -> dict:
-        """Конфигурация интервала проверки схематронов
+        """Конфигурация интервала проверки схематронов и XSD
         Development: каждую минуту
         Production: каждые 60 минут
         """
@@ -62,7 +62,7 @@ class Plugin(ScheduledPlugin):
             return {"interval": 60, "unit": "minutes"}
 
     def check_updates(self):
-        """Проверяет изменения схематронов и уведомляет подписчиков"""
+        """Проверяет изменения схематронов и XSD и уведомляет подписчиков"""
         self.handlers.check_updates()
 
     def shutdown(self):
