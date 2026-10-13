@@ -25,19 +25,19 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from config import get_config  # noqa: E402
-from plugins.schematron_monitor.backfill import (  # noqa: E402
+from config import get_config
+from plugins.schematron_monitor.backfill import (
     BackfillError,
     apply_backfill,
     prepare_backfill,
 )
-from plugins.schematron_monitor.monitor import (  # noqa: E402
+from plugins.schematron_monitor.monitor import (
     ARTIFACT_KINDS,
     SchematronMonitor,
 )
-from plugins.semd_checker.semd_logic import get_semd638, get_semd1520  # noqa: E402
-from services.gitlab_client import GitLabClient  # noqa: E402
-from services.schematron_store import SchematronStore  # noqa: E402
+from plugins.semd_checker.semd_logic import get_semd638, get_semd1520
+from services.gitlab_client import GitLabClient
+from services.schematron_store import SchematronStore
 
 KINDS = {kind.key: kind for kind in ARTIFACT_KINDS}
 
