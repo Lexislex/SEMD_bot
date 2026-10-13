@@ -19,6 +19,21 @@ _TELEGRAM_RECONNECT_DELAY_BASE = 5  # базовая задержка перед
 _TELEGRAM_RECONNECT_DELAY_MAX = 60  # максимальная задержка перед переподключением
 
 
+def send_params_in_body(method, url, params=None, files=None, **kwargs):
+    """Request sender for telebot that puts POST parameters into the body.
+
+    telebot passes API parameters as ``params``, i.e. in the query string.
+    A long message text (Cyrillic is URL-encoded to 6 bytes per character)
+    then exceeds the URL limit of the reverse proxy (nginx: 414 Request-URI
+    Too Large). The Bot API accepts the same fields as a form body, both
+    urlencoded and multipart (with files).
+    """
+    session = apihelper._get_req_session()
+    if method.lower() == "post" and params:
+        return session.request(method, url, data=params, files=files, **kwargs)
+    return session.request(method, url, params=params, files=files, **kwargs)
+
+
 class SEMDBotCore:
     def __init__(self, config):
         self.config = config
@@ -33,6 +48,8 @@ class SEMDBotCore:
         """Настраивает TeleBot на работу через reverse-proxy или классический прокси."""
         proxy_cfg = config.proxy
         base_url = config.app.telegram_api_base_url
+        # Параметры POST — в теле запроса, иначе длинный текст упирается в лимит URL
+        apihelper.CUSTOM_REQUEST_SENDER = send_params_in_body
 
         if base_url:
             base = base_url.rstrip("/")
@@ -93,7 +110,10 @@ class SEMDBotCore:
                     long_polling_timeout=_TELEGRAM_LONG_POLLING_TIMEOUT,
                 )
                 reconnect_attempt = 0
-            except (requests.exceptions.RequestException, telebot.apihelper.ApiException) as e:
+            except (
+                requests.exceptions.RequestException,
+                telebot.apihelper.ApiException,
+            ) as e:
                 reconnect_attempt += 1
                 delay = min(
                     _TELEGRAM_RECONNECT_DELAY_BASE * (2 ** (reconnect_attempt - 1)),
