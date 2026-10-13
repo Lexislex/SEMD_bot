@@ -10,12 +10,14 @@ from telebot.types import CallbackQuery
 from services.gitlab_client import GitLabClient
 from services.schematron_store import (
     STATUS_ERROR,
+    STATUS_NO_FILES,
     STATUS_NO_GIT_LINK,
     STATUS_NO_SCHEMATRON,
     STATUS_NOT_IN_1520,
     STATUS_OK,
     STATUS_REPO_NOT_FOUND,
     SchematronStore,
+    WatchState,
 )
 from utils.message_manager import get_message_manager
 
@@ -27,19 +29,25 @@ from .formatters import (
     is_night,
     with_inline_diff,
 )
-from .monitor import NotificationError, SchematronChange, SchematronMonitor
+from .monitor import (
+    ARTIFACT_KINDS,
+    MAX_DOCUMENT_BYTES,
+    ArtifactKind,
+    NotificationError,
+    SchematronChange,
+    SchematronMonitor,
+)
 
 STATUS_LABELS = {
     STATUS_OK: "✅",
-    STATUS_NO_SCHEMATRON: "⚪️ нет схематрона",
+    STATUS_NO_SCHEMATRON: "⚪️ нет файлов",
+    STATUS_NO_FILES: "⚪️ нет файлов",
     STATUS_REPO_NOT_FOUND: "⚠️ репозиторий недоступен",
     STATUS_NOT_IN_1520: "⚠️ нет в 1520",
     STATUS_NO_GIT_LINK: "⚠️ нет GIT_LINK",
     STATUS_ERROR: "❌ ошибка",
 }
 MENU_NAME_LIMIT = 45
-# Лимит Telegram Bot API на отправку файла — 50 МБ, держим запас
-MAX_DOCUMENT_BYTES = 45 * 1024 * 1024
 
 
 class SchematronHandlers:
@@ -63,7 +71,7 @@ class SchematronHandlers:
         )
 
     def check_updates(self):
-        """Проверка изменений схематронов для всех отслеживаемых СЭМД."""
+        """Проверка изменений схематронов и XSD для всех отслеживаемых СЭМД."""
         changes = self.monitor.check_all(WATCHED_SEMD)
         if changes:
             self.logger.info(
@@ -72,7 +80,7 @@ class SchematronHandlers:
 
     def send_change(self, change: SchematronChange):
         """
-        Отправляет уведомление об изменении схематрона во все чаты рассылки.
+        Отправляет уведомление об изменении схематрона/XSD во все чаты рассылки.
 
         Доставкой считается отправка текста; ошибки вложений логируются,
         но не блокируют сдвиг baseline (ссылки на GitLab есть в тексте).
@@ -129,13 +137,14 @@ class SchematronHandlers:
             )
 
     def _build_documents(self, change: SchematronChange) -> List[Tuple[str, bytes]]:
-        """Files to attach: .diff and full schematron files, within the size limit."""
+        """Files to attach: .diff and full files, within the size limit."""
         documents = []
         if change.diffs:
             documents.append(
                 (diff_file_name(change), build_diff_text(change).encode("utf-8"))
             )
-        # Полные файлы — когда сравнение недоступно или diff слишком большой
+        # Полные файлы — когда сравнение недоступно или diff слишком большой;
+        # монитор уже отбросил файлы больше лимита, здесь проверка на всякий случай
         documents += [
             (posixpath.basename(path), content) for path, content in change.attachments
         ]
@@ -167,9 +176,22 @@ class SchematronHandlers:
         except ValueError:
             return iso_value
 
+    def _kind_status(self, kind: ArtifactKind, state: Optional[WatchState]) -> str:
+        """``SCH ✅ (изм. 26.05.2026)``; the date only after a delivered change."""
+        label = STATUS_LABELS.get(state.status, state.status) if state else "⏳"
+        changed = ""
+        if state and state.last_changed:
+            changed = f" (изм. {self._format_dt(state.last_changed, '%d.%m.%Y')})"
+        return f"{kind.label} {label}{changed}"
+
     def build_menu_text(self) -> str:
-        states = self.store.get_all()
-        checked = [s.last_checked for s in states.values() if s.last_checked]
+        states = {kind.key: self.store.get_all(kind.key) for kind in ARTIFACT_KINDS}
+        checked = [
+            s.last_checked
+            for by_oid in states.values()
+            for s in by_oid.values()
+            if s.last_checked
+        ]
         last_check = (
             self._format_dt(max(checked), "%d.%m.%Y %H:%M")
             if checked
@@ -177,9 +199,12 @@ class SchematronHandlers:
         )
 
         lines = [
-            "🧩 <b>Мониторинг схематронов СЭМД</b>",
+            "🧩 <b>Мониторинг схематронов и XSD-схем СЭМД</b>",
             "",
-            f"Отслеживаем изменения схематронов в GitLab Минздрава для {len(WATCHED_SEMD)} СЭМД.",
+            (
+                "Отслеживаем изменения схематронов и XSD-схем в GitLab Минздрава "
+                f"для {len(WATCHED_SEMD)} СЭМД."
+            ),
             "Уведомления публикуются в канал <b>«СЭМД инфо»</b>:",
             "https://t.me/+QGan41q3n6U1MzJi",
             "",
@@ -187,13 +212,13 @@ class SchematronHandlers:
             "",
         ]
         for semd_oid in WATCHED_SEMD:
-            state = states.get(semd_oid)
-            label = STATUS_LABELS.get(state.status, state.status) if state else "⏳"
-            changed = ""
-            if state and state.last_changed:
-                changed = f" (изм. {self._format_dt(state.last_changed, '%d.%m.%Y')})"
+            statuses = " · ".join(
+                self._kind_status(kind, states[kind.key].get(semd_oid))
+                for kind in ARTIFACT_KINDS
+            )
             lines.append(
-                f"• <code>{escape(semd_oid)}</code> {label} {escape(self._semd_name(semd_oid))}{changed}"
+                f"• <code>{escape(semd_oid)}</code> {escape(self._semd_name(semd_oid))}"
+                f" — {statuses}"
             )
         return "\n".join(lines)
 
