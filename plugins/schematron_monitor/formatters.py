@@ -1,11 +1,16 @@
-"""Telegram message and .diff file formatting for schematron changes."""
+"""Telegram message and .diff file formatting for schematron and XSD changes."""
 
 from dataclasses import replace
 from datetime import datetime
 from html import escape
 from typing import Dict, List, Optional, Set, Tuple
 
-from .monitor import SchematronChange, is_diff_truncated
+from .monitor import (
+    SKIP_LIMIT_EXCEEDED,
+    SKIP_LIST_FAILED,
+    SchematronChange,
+    is_diff_truncated,
+)
 
 # Лимит Telegram — 4096 символов UTF-16 после разбора HTML; мы считаем по
 # сырому HTML и держим запас
@@ -99,9 +104,44 @@ def _format_files(change: SchematronChange, max_files: int) -> List[str]:
     return lines
 
 
+def _attachments_note(change: SchematronChange, whole_set: bool) -> Optional[str]:
+    """What happened to the full files, based on what is actually attached.
+
+    Args:
+        whole_set: the files are the kind's whole current set (force-push,
+            compare timeout), not only the files with truncated diffs.
+    """
+    attached = len(change.attachments)
+    reasons = {reason for _, reason in change.skipped}
+    if SKIP_LIST_FAILED in reasons:
+        return "📎 Не удалось получить список файлов — см. GitLab."
+    if SKIP_LIMIT_EXCEEDED in reasons:
+        return (
+            f"📎 Файлов слишком много ({len(change.skipped)}), не приложены — "
+            "полный набор в GitLab."
+        )
+    if change.skipped and attached:
+        return (
+            f"📎 Приложено файлов: {attached}; часть файлов недоступна или превышает "
+            "лимит — полный набор в GitLab."
+        )
+    if change.skipped:
+        return (
+            "📎 Файлы не приложены (недоступны или превышают лимит) — "
+            "полный набор в GitLab."
+        )
+    if whole_set and attached == 1:
+        return f"📎 Текущая версия {change.kind.genitive} приложена файлом."
+    if whole_set and attached:
+        return (
+            f"📎 Текущая версия {change.kind.genitive} приложена, файлов: {attached}."
+        )
+    return None
+
+
 def _render_message(change: SchematronChange, client, max_files: int) -> str:
     lines = [
-        "🧩 <b>Изменён схематрон СЭМД</b>",
+        change.kind.headline,
         "",
         f"<b>{escape(change.semd_name)}</b>",
         f"OID: <code>{escape(change.semd_oid)}</code> · "
@@ -119,14 +159,18 @@ def _render_message(change: SchematronChange, client, max_files: int) -> str:
         lines.append("⚠️ GitLab не успел построить сравнение, diff недоступен.")
 
     if change.history_rewritten or change.compare_timed_out:
-        if change.attachments:
-            lines.append("📎 Текущая версия схематрона приложена файлом.")
+        note = _attachments_note(change, whole_set=True)
+        if note:
+            lines.append(note)
         commits = change.commits or [change.head_commit]
         lines += ["", "📝 <b>Коммиты:</b>"]
         lines += _format_commits(replace(change, commits=commits), client)
     else:
         lines.append("📄 <b>Файлы:</b>")
         lines += _format_files(change, max_files)
+        note = _attachments_note(change, whole_set=False)
+        if note:
+            lines.append(note)
         lines += ["", "📝 <b>Коммиты:</b>"]
         lines += _format_commits(change, client)
 
@@ -134,11 +178,13 @@ def _render_message(change: SchematronChange, client, max_files: int) -> str:
     if change.compare_url:
         links.append(f"<a href='{escape(change.compare_url)}'>Сравнение в GitLab</a>")
     if change.tree_url:
-        links.append(f"<a href='{escape(change.tree_url)}'>Папка schematron</a>")
+        links.append(
+            f"<a href='{escape(change.tree_url)}'>Папка {escape(change.kind.directory)}</a>"
+        )
     if links:
         lines += ["", "🔗 " + " · ".join(links)]
 
-    lines += ["", f"#схематрон #СЭМД_{escape(change.semd_oid)}"]
+    lines += ["", f"{change.kind.hashtag} #СЭМД_{escape(change.semd_oid)}"]
     return "\n".join(lines)
 
 
@@ -158,7 +204,7 @@ def format_change_message(change: SchematronChange, client) -> str:
 
 
 def build_diff_text(change: SchematronChange) -> str:
-    """Unified diff of schematron files with a short header."""
+    """Unified diff of the changed files with a short header."""
     parts = [
         f"# СЭМД {change.semd_oid}: {change.semd_name}",
         f"# {change.repo.project_path} @ {change.repo.ref}",
@@ -187,7 +233,8 @@ def build_diff_text(change: SchematronChange) -> str:
 
 def diff_file_name(change: SchematronChange) -> str:
     return (
-        f"schematron_{change.semd_oid}_{change.from_sha[:8]}_{change.to_sha[:8]}.diff"
+        f"{change.kind.key}_{change.semd_oid}_"
+        f"{change.from_sha[:8]}_{change.to_sha[:8]}.diff"
     )
 
 

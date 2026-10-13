@@ -112,3 +112,43 @@ def test_oversized_document_skipped(monkeypatch):
     names = [c.kwargs["visible_file_name"] for c in h.bot.send_document.call_args_list]
     assert "big.sch" not in names
     h.bot.send_message.assert_called_once()
+
+
+def test_menu_shows_both_kinds_and_fits_telegram(tmp_path):
+    from plugins.schematron_monitor.data import WATCHED_SEMD
+    from plugins.schematron_monitor.formatters import tg_length
+    from services.schematron_store import (
+        STATUS_NO_FILES,
+        STATUS_OK,
+        SchematronStore,
+        WatchState,
+    )
+
+    h = make_handlers([1])
+    h.store = SchematronStore(tmp_path / "fnsi.sqlite")
+    long_name = (
+        "Протокол консультации в рамках диспансерного наблюдения (CDA) Редакция 6"
+    )
+    h.semd1520 = SimpleNamespace(get_semd_info=lambda oid: {"NAME": long_name})
+    for oid in WATCHED_SEMD:
+        h.store.save(
+            WatchState(oid, status=STATUS_OK, last_changed="2026-05-26T10:56:34+00:00")
+        )
+        h.store.save(
+            WatchState(
+                oid,
+                status=STATUS_OK,
+                last_changed="2026-10-12T11:23:30+00:00",
+                kind="xsd",
+            )
+        )
+    h.store.save(WatchState("4", status=STATUS_NO_FILES, kind="xsd"))
+
+    text = h.build_menu_text()
+
+    line_289 = next(line for line in text.splitlines() if "<code>289</code>" in line)
+    assert "SCH ✅ (изм. 26.05.2026) · XSD ✅ (изм. 12.10.2026)" in line_289
+    line_4 = next(line for line in text.splitlines() if "<code>4</code>" in line)
+    assert "XSD ⚪️ нет файлов" in line_4
+    assert "(изм." not in line_4.split("XSD")[1]  # даты нет без доставленного изменения
+    assert tg_length(text) <= 4096

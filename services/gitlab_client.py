@@ -277,6 +277,24 @@ class GitLabClient:
             f"projects/{self._project_id(repo)}/repository/commits", params
         )
 
+    def get_commit(self, repo: SemdRepo, sha: str) -> Dict:
+        """Commit by full or short sha.
+
+        Raises:
+            GitLabNotFoundError: the commit does not exist.
+        """
+        return self._get(
+            f"projects/{self._project_id(repo)}/repository/commits/{quote(sha, safe='')}"
+        )
+
+    def merge_base(self, repo: SemdRepo, first: str, second: str) -> str:
+        """Full sha of the common ancestor of two commits."""
+        data = self._get(
+            f"projects/{self._project_id(repo)}/repository/merge_base",
+            {"refs[]": [first, second]},
+        )
+        return data["id"]
+
     def list_files(self, repo: SemdRepo, path: str, ref: str) -> List[str]:
         """Paths of all files under ``path`` at ``ref`` (branch or sha)."""
         files: List[str] = []

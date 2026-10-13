@@ -7,6 +7,7 @@
 ```
 scripts/
 ├── README.md                  # Этот файл
+├── schematron_backfill.py     # Догон изменений схематрона/XSD (см. plugins/schematron_monitor/README.md)
 ├── database/                  # Скрипты для работы с базами данных
 │   ├── README.md              # Документация
 │   ├── clean_fnsi_db.py       # Гибкая очистка FNSI базы
