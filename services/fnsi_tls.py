@@ -12,28 +12,45 @@ import ssl
 
 import requests
 from requests.adapters import HTTPAdapter
+from urllib3.util.ssl_ import create_urllib3_context
 
 # ECDHE suites stay preferred; RSA key exchange is only a fallback for FNSI
 FNSI_TLS12_CIPHERS = "ECDHE+AESGCM:ECDHE+CHACHA20:AES128-GCM-SHA256"
 
 
-def fnsi_ssl_context() -> ssl.SSLContext:
-    """Return a verifying SSL context that also allows AES128-GCM-SHA256."""
-    context = ssl.create_default_context()
-    context.set_ciphers(FNSI_TLS12_CIPHERS)
-    return context
+def fnsi_ssl_context(verify: bool = True) -> ssl.SSLContext:
+    """Return an SSL context that also allows AES128-GCM-SHA256.
+
+    The urllib3 context loads no CA certificates itself, so ``verify=<path>``
+    keeps requests' semantics: only that bundle is trusted.
+    """
+    cert_reqs = ssl.CERT_REQUIRED if verify else ssl.CERT_NONE
+    return create_urllib3_context(ciphers=FNSI_TLS12_CIPHERS, cert_reqs=cert_reqs)
 
 
 class FnsiTLSAdapter(HTTPAdapter):
-    """HTTPAdapter that uses :func:`fnsi_ssl_context` for direct and proxied HTTPS."""
+    """HTTPAdapter that uses :func:`fnsi_ssl_context` for direct and proxied HTTPS.
 
-    def init_poolmanager(self, *args, **kwargs):
-        kwargs["ssl_context"] = fnsi_ssl_context()
-        return super().init_poolmanager(*args, **kwargs)
+    urllib3 loads the ``verify`` bundle into the context it is given, so one
+    shared context would accumulate trusted CAs across requests. A separate
+    context is kept per ``verify``/``cert`` value and passed through the pool
+    key, which also isolates the pools themselves.
+    """
 
-    def proxy_manager_for(self, proxy, **proxy_kwargs):
-        proxy_kwargs["ssl_context"] = fnsi_ssl_context()
-        return super().proxy_manager_for(proxy, **proxy_kwargs)
+    def __init__(self, *args, **kwargs):
+        self._ssl_contexts: dict = {}
+        super().__init__(*args, **kwargs)
+
+    def build_connection_pool_key_attributes(self, request, verify, cert=None):
+        host_params, pool_kwargs = super().build_connection_pool_key_attributes(
+            request, verify, cert
+        )
+        if host_params["scheme"] == "https":
+            key = (verify, cert if not isinstance(cert, list) else tuple(cert))
+            if key not in self._ssl_contexts:
+                self._ssl_contexts[key] = fnsi_ssl_context(verify is not False)
+            pool_kwargs["ssl_context"] = self._ssl_contexts[key]
+        return host_params, pool_kwargs
 
 
 def fnsi_session() -> requests.Session:

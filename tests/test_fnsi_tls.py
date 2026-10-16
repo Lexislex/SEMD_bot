@@ -26,9 +26,47 @@ def test_session_uses_fnsi_adapter_for_https():
     )
 
 
-def test_adapter_passes_context_to_direct_and_proxy_pools():
+def test_context_trusts_only_the_given_bundle():
+    assert fnsi_ssl_context().get_ca_certs() == []
+
+
+def test_final_https_pool_gets_ca_bundle_and_fnsi_context(tmp_path):
+    ca = tmp_path / "ca.pem"
+    ca.write_text("")
     adapter = FnsiTLSAdapter()
-    direct = adapter.poolmanager.connection_pool_kw["ssl_context"]
-    proxied = adapter.proxy_manager_for("http://proxy.local:3128")
-    assert "AES128-GCM-SHA256" in [c["name"] for c in direct.get_ciphers()]
-    assert "ssl_context" in proxied.connection_pool_kw
+    request = requests.Request("GET", "https://nsi.rosminzdrav.ru/").prepare()
+
+    for proxies in (None, {"https": "http://proxy.local:3128"}):
+        pool = adapter.get_connection_with_tls_context(
+            request, verify=str(ca), proxies=proxies
+        )
+        assert pool.ca_certs == str(ca)
+        assert pool.cert_reqs == "CERT_REQUIRED"
+        context = pool.conn_kw["ssl_context"]
+        assert "AES128-GCM-SHA256" in [c["name"] for c in context.get_ciphers()]
+
+
+def test_each_ca_bundle_gets_its_own_context_and_pool(tmp_path):
+    adapter = FnsiTLSAdapter()
+    request = requests.Request("GET", "https://nsi.rosminzdrav.ru/").prepare()
+    pools = []
+    for name in ("a.pem", "b.pem", "a.pem"):
+        (tmp_path / name).write_text("")
+        pools.append(
+            adapter.get_connection_with_tls_context(
+                request, verify=str(tmp_path / name)
+            )
+        )
+
+    assert pools[0] is pools[2]
+    assert pools[0] is not pools[1]
+    assert pools[0].conn_kw["ssl_context"] is not pools[1].conn_kw["ssl_context"]
+
+
+def test_verify_false_gets_non_verifying_context():
+    adapter = FnsiTLSAdapter()
+    request = requests.Request("GET", "https://nsi.rosminzdrav.ru/").prepare()
+    pool = adapter.get_connection_with_tls_context(request, verify=False)
+    context = pool.conn_kw["ssl_context"]
+    assert not context.check_hostname
+    assert context.verify_mode.name == "CERT_NONE"
