@@ -10,6 +10,7 @@ import requests
 
 from config import get_config
 from plugins.semd_checker.semd_logic import SEMDVersionFetcher
+from services.fnsi_tls import fnsi_session
 from services.proxy_utils import build_proxies, build_url
 from utils.retry import backoff_delay
 
@@ -60,7 +61,7 @@ def get_version(nsi: str, ver: str = "latest") -> dict:
         "Accept": "application/json;charset=UTF-8",
         "Content-Type": "application/json",
     }
-    session = requests.Session()
+    session = fnsi_session()
     url = (
         f"{build_url(cfg.apis.fnsi_api_url, 'searchDictionary')}"
         f"?userKey={cfg.apis.fnsi_api_key}&identifier={nsi}"
@@ -294,7 +295,7 @@ class FnsiApi:
         self.max_retries = max(1, max_retries)
         self.requests_made = 0
         self._cfg = cfg
-        self._session = session or requests.Session()
+        self._session = session or fnsi_session()
 
     def remaining(self) -> float:
         return self.deadline - monotonic()
