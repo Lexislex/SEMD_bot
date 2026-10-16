@@ -2,9 +2,8 @@ import glob
 import logging
 import os
 
-import requests
-
 from config import get_config
+from services.fnsi_tls import fnsi_session
 from services.proxy_utils import build_proxies, build_url
 
 cfg = get_config()
@@ -51,7 +50,7 @@ def download_file(nsi: str, ver: str, path: str = cfg.paths.files_dir) -> bool:
         # Формируем URL для скачивания без двойного слеша
         download_url = build_url(cfg.apis.fnsi_files_url, out_file_name)
 
-        req = requests.get(
+        req = fnsi_session().get(
             download_url,
             stream=True,
             verify=str(cfg.paths.mzrf_cert_path),

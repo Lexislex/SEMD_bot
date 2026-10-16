@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from utils import file_utils
 
@@ -41,7 +42,7 @@ def _response(status=200, body=b"new"):
 
 
 def test_download_replaces_old_versions_of_same_dictionary(files, cert):
-    with patch.object(file_utils.requests, "get", return_value=_response()) as get:
+    with patch.object(requests.Session, "get", return_value=_response()) as get:
         assert file_utils.download_file(OID, "2.0", path=files)
 
     assert sorted(p.name for p in files.glob("*.zip")) == [
@@ -54,7 +55,7 @@ def test_download_replaces_old_versions_of_same_dictionary(files, cert):
 
 
 def test_failed_download_keeps_old_version(files, cert):
-    with patch.object(file_utils.requests, "get", return_value=_response(404)):
+    with patch.object(requests.Session, "get", return_value=_response(404)):
         assert not file_utils.download_file(OID, "2.0", path=files)
 
     assert (files / f"{OID}_1.0_csv.zip").exists()
@@ -62,6 +63,6 @@ def test_failed_download_keeps_old_version(files, cert):
 
 
 def test_existing_file_is_not_downloaded(files, cert):
-    with patch.object(file_utils.requests, "get") as get:
+    with patch.object(requests.Session, "get") as get:
         assert file_utils.download_file(OID, "1.0", path=files)
     get.assert_not_called()
