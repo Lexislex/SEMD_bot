@@ -41,6 +41,11 @@ class FnsiTLSAdapter(HTTPAdapter):
         self._ssl_contexts: dict = {}
         super().__init__(*args, **kwargs)
 
+    def __setstate__(self, state):
+        # HTTPAdapter.__setstate__ skips __init__; SSL contexts are not picklable
+        self._ssl_contexts = {}
+        super().__setstate__(state)
+
     def build_connection_pool_key_attributes(self, request, verify, cert=None):
         host_params, pool_kwargs = super().build_connection_pool_key_attributes(
             request, verify, cert

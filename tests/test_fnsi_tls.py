@@ -1,3 +1,5 @@
+import pickle
+
 import requests
 
 from services.fnsi_tls import FnsiTLSAdapter, fnsi_session, fnsi_ssl_context
@@ -70,3 +72,10 @@ def test_verify_false_gets_non_verifying_context():
     context = pool.conn_kw["ssl_context"]
     assert not context.check_hostname
     assert context.verify_mode.name == "CERT_NONE"
+
+
+def test_adapter_survives_pickling():
+    adapter = pickle.loads(pickle.dumps(FnsiTLSAdapter()))
+    request = requests.Request("GET", "https://nsi.rosminzdrav.ru/").prepare()
+    pool = adapter.get_connection_with_tls_context(request, verify=True)
+    assert "ssl_context" in pool.conn_kw
